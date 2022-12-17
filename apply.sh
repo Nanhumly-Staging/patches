@@ -46,6 +46,13 @@ echo "Executing in 5 seconds - CTRL-C to exit"
 echo ""
 fi
 
+if [ $1 = crdroid ];then
+echo ""
+echo "Adapt crDroid to Sagit"
+echo "Executing in 5 seconds - CTRL-C to exit"
+echo ""
+fi
+
 sleep 5
 
 echo "Applying patches"
