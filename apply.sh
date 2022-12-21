@@ -18,37 +18,9 @@ for project in $(cd $patches/patches/$tree; echo *);do
 done
 }
 
-if [ $1 = arrow ];then
+if [ $1 = lineage ];then
 echo ""
-echo "Adapt ArrowOS to Sagit"
-echo "Executing in 5 seconds - CTRL-C to exit"
-echo ""
-fi
-
-if [ $1 = xdroid ];then
-echo ""
-echo "Adapt XDroidOS to Sagit"
-echo "Executing in 5 seconds - CTRL-C to exit"
-echo ""
-fi
-
-if [ $1 = pe ];then
-echo ""
-echo "Adapt PixelExperience to Sagit"
-echo "Executing in 5 seconds - CTRL-C to exit"
-echo ""
-fi
-
-if [ $1 = peplus ];then
-echo ""
-echo "Adapt PixelExperience Plus to Sagit"
-echo "Executing in 5 seconds - CTRL-C to exit"
-echo ""
-fi
-
-if [ $1 = crdroid ];then
-echo ""
-echo "Adapt crDroid to Sagit"
+echo "Adapt LineageOS to Sagit"
 echo "Executing in 5 seconds - CTRL-C to exit"
 echo ""
 fi
