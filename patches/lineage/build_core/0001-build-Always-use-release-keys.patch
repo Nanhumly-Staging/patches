@@ -1,0 +1,30 @@
+From cb01a8ff5e3ccc552b9ace3c5239306b8ef00590 Mon Sep 17 00:00:00 2001
+From: Pranav Vashi <neobuddy89@gmail.com>
+Date: Sat, 16 Oct 2021 00:12:03 +0530
+Subject: [PATCH] build: Always use release-keys
+
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
+---
+ core/sysprop.mk | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/core/sysprop.mk b/core/sysprop.mk
+index 5ff93a13e..39275b1bf 100644
+--- a/core/sysprop.mk
++++ b/core/sysprop.mk
+@@ -159,11 +159,7 @@ endif
+ # non-default dev keys (usually private keys from a vendor directory).
+ # Both of these tags will be removed and replaced with "release-keys"
+ # when the target-files is signed in a post-build step.
+-ifeq ($(DEFAULT_SYSTEM_DEV_CERTIFICATE),build/make/target/product/security/testkey)
+-BUILD_KEYS := test-keys
+-else
+-BUILD_KEYS := dev-keys
+-endif
++BUILD_KEYS := release-keys
+ BUILD_VERSION_TAGS += $(BUILD_KEYS)
+ BUILD_VERSION_TAGS := $(subst $(space),$(comma),$(sort $(BUILD_VERSION_TAGS)))
+ 
+-- 
+2.32.0
+
