@@ -18,9 +18,9 @@ for project in $(cd $patches/patches/$tree; echo *);do
 done
 }
 
-if [ $1 = lineage ];then
+if [ $1 = miku ];then
 echo ""
-echo "Adapt LineageOS to Sagit"
+echo "Adapt MikuUI to Sagit"
 echo "Executing in 5 seconds - CTRL-C to exit"
 echo ""
 fi
