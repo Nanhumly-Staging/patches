@@ -1,0 +1,27 @@
+From b50a5997b9f90855ee8f82a74104c10183398cae Mon Sep 17 00:00:00 2001
+From: Nanhumly <admin@warbler.cc>
+Date: Sun, 26 Mar 2023 12:44:28 +0000
+Subject: [PATCH] Aovid flash error
+
+---
+ tools/releasetools/non_ab_ota.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/releasetools/non_ab_ota.py b/tools/releasetools/non_ab_ota.py
+index 85d2f7da1c..2f276f27c3 100644
+--- a/tools/releasetools/non_ab_ota.py
++++ b/tools/releasetools/non_ab_ota.py
+@@ -224,8 +224,8 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
+ 
+   CopyInstallTools(output_zip)
+   script.UnpackPackageDir("install", "/tmp/install")
+-  script.SetPermissionsRecursive("/tmp/install", 0, 0, 0o755, 0o644, None, None)
+-  script.SetPermissionsRecursive("/tmp/install/bin", 0, 0, 0o755, 0o755, None, None)
++#  script.SetPermissionsRecursive("/tmp/install", 0, 0, 0o755, 0o644, None, None)
++#  script.SetPermissionsRecursive("/tmp/install/bin", 0, 0, 0o755, 0o755, None, None)
+ 
+   # All other partitions as well as the data wipe use 10% of the progress, and
+   # the update of the system partition takes the remaining progress.
+-- 
+2.32.0
+

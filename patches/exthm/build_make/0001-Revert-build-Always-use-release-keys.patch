@@ -1,0 +1,29 @@
+From 4d4c83780babcdb3289d35e54627182e50be7975 Mon Sep 17 00:00:00 2001
+From: Nanhumly <admin@warbler.cc>
+Date: Sun, 26 Mar 2023 11:25:59 +0000
+Subject: [PATCH] Revert "build: Always use release-keys"
+
+This reverts commit a59051fbc209c4e63fa92999a0eb10ff82a5b664.
+---
+ core/sysprop.mk | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/core/sysprop.mk b/core/sysprop.mk
+index cb7e725666..214c4431ae 100644
+--- a/core/sysprop.mk
++++ b/core/sysprop.mk
+@@ -163,7 +163,11 @@ endif
+ # non-default dev keys (usually private keys from a vendor directory).
+ # Both of these tags will be removed and replaced with "release-keys"
+ # when the target-files is signed in a post-build step.
++ifeq ($(DEFAULT_SYSTEM_DEV_CERTIFICATE),build/make/target/product/security/testkey)
++BUILD_KEYS := test-keys
++else
+ BUILD_KEYS := release-keys
++endif
+ BUILD_VERSION_TAGS += $(BUILD_KEYS)
+ BUILD_VERSION_TAGS := $(subst $(space),$(comma),$(sort $(BUILD_VERSION_TAGS)))
+ 
+-- 
+2.32.0
+
