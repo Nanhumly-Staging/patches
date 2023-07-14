@@ -1,0 +1,23 @@
+From 28c3c139ba16cb7d85de189e47329f500431a1ae Mon Sep 17 00:00:00 2001
+From: Nanhumly <admin@warbler.cc>
+Date: Fri, 14 Jul 2023 08:10:00 +0000
+Subject: [PATCH] Add unofficial OTA support [3/3]
+
+Change-Id: Id36dc4b346c07df4f9e7726ade69c8dc1b55276f
+Signed-off-by: Nanhumly <admin@warbler.cc>
+---
+ config/ota.mk | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/config/ota.mk b/config/ota.mk
+index 879ca945..d4d36f3c 100644
+--- a/config/ota.mk
++++ b/config/ota.mk
+@@ -1,4 +1,2 @@
+-ifneq ($(filter OFFICIAL CI,$(CUSTOM_BUILD_TYPE)),)
+ PRODUCT_PACKAGES += \
+     Updates
+-endif
+-- 
+2.32.0
+

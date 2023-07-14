@@ -1,0 +1,29 @@
+From 3310a96d0423381628a70b22878b205ab74a1f9f Mon Sep 17 00:00:00 2001
+From: piscesmk2013 <piscesmk2013@gmail.com>
+Date: Fri, 14 Jul 2023 08:07:13 +0000
+Subject: [PATCH] Add unofficial OTA support [2/3]
+
+Change-Id: I12bbf30e4b29267acb3c776bfad9d71bcc70af32
+Signed-off-by: Nanhumly <admin@warbler.cc>
+---
+ .../settings/system/SystemUpdatePreferenceController.java     | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/src/com/android/settings/system/SystemUpdatePreferenceController.java b/src/com/android/settings/system/SystemUpdatePreferenceController.java
+index 8db9722388..5995f92035 100644
+--- a/src/com/android/settings/system/SystemUpdatePreferenceController.java
++++ b/src/com/android/settings/system/SystemUpdatePreferenceController.java
+@@ -46,10 +46,6 @@ public class SystemUpdatePreferenceController extends BasePreferenceController {
+ 
+     @Override
+     public int getAvailabilityStatus() {
+-        String buildtype = SystemProperties.get(OTA_BUILD_TYPE_PROP,"unofficial");
+-        if (!mUm.isAdminUser() || (!buildtype.equalsIgnoreCase("official") && !buildtype.equalsIgnoreCase("ci"))){
+-            return UNSUPPORTED_ON_DEVICE;
+-        }
+         try {
+             PackageManager pm = mContext.getPackageManager();
+             pm.getPackageInfo(OTA_APP_PACKAGE, PackageManager.GET_ACTIVITIES);
+-- 
+2.32.0
+
