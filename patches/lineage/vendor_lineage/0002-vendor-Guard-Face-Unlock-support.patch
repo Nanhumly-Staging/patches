@@ -1,0 +1,38 @@
+From f99e5fb633c9575ad8a8d9bf0a2d7e1eb06af088 Mon Sep 17 00:00:00 2001
+From: someone5678 <someone5678@users.noreply.github.com>
+Date: Fri, 1 Dec 2023 22:47:41 +0900
+Subject: [PATCH 2/2] vendor: Guard Face Unlock support
+
+* There're some devices with native face unlock support which ParanoidSense is not required
+* So let's not enforce build for weak modality face unlock
+
+Change-Id: I0f8d34bd29fa8c47384af1e178bd827a23027841
+---
+ config/common.mk | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/config/common.mk b/config/common.mk
+index e2e95461..2286f48f 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -67,7 +67,8 @@ PRODUCT_COPY_FILES += \
+     frameworks/base/data/keyboards/Vendor_045e_Product_028e.kl:$(TARGET_COPY_OUT_PRODUCT)/usr/keylayout/Vendor_045e_Product_0719.kl
+ 
+ # Face Unlock
+-TARGET_FACE_UNLOCK_SUPPORTED ?= $(TARGET_SUPPORTS_64_BIT_APPS)
++ifeq ($(TARGET_SUPPORTS_64_BIT_APPS),true)
++TARGET_FACE_UNLOCK_SUPPORTED ?= true
+ 
+ ifeq ($(TARGET_FACE_UNLOCK_SUPPORTED),true)
+ PRODUCT_PACKAGES += \
+@@ -79,6 +80,7 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += \
+ PRODUCT_COPY_FILES += \
+     frameworks/native/data/etc/android.hardware.biometrics.face.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/android.hardware.biometrics.face.xml
+ endif
++endif
+ 
+ # This is Lineage!
+ PRODUCT_COPY_FILES += \
+-- 
+2.25.1
+

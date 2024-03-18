@@ -1,0 +1,26 @@
+From cd68081aa686412a257275390aeb73f3ba45944c Mon Sep 17 00:00:00 2001
+From: AmeChanRain <downloadbot007@gmail.com>
+Date: Fri, 13 Oct 2023 13:57:20 +0000
+Subject: [PATCH 1/2] Settings: Enable Cloned Apps by default
+
+Change-Id: I17cf1d11ffba858b64444e09cd08b5ec7e162b4e
+---
+ res/values/config.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/res/values/config.xml b/res/values/config.xml
+index 17c33989502..cff628e13e7 100755
+--- a/res/values/config.xml
++++ b/res/values/config.xml
+@@ -744,7 +744,7 @@
+     <bool name="config_battery_manager_consider_ac">false</bool>
+ 
+     <!-- Whether to display Cloned Apps page in Settings (Settings > Apps > Cloned Apps).-->
+-    <bool name="config_cloned_apps_page_enabled">false</bool>
++    <bool name="config_cloned_apps_page_enabled">true</bool>
+ 
+     <!-- Certificates of apps which are allowed to use activity embedding with Settings.-->
+     <string-array name="config_known_host_certs" translatable="false">
+-- 
+2.25.1
+

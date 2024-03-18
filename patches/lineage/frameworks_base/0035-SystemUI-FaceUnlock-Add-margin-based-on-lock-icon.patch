@@ -1,0 +1,33 @@
+From f1b53916152ebf4891726a63999f0abee88eeb26 Mon Sep 17 00:00:00 2001
+From: someone5678 <someone5678@users.noreply.github.com>
+Date: Sat, 2 Dec 2023 18:12:37 +0900
+Subject: [PATCH 07/11] SystemUI: FaceUnlock: Add margin based on lock icon
+
+Change-Id: Ib7a0562e2d134b9fed9e45293939db3786c54f24
+---
+ packages/SystemUI/res/layout/keyguard_bottom_area.xml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/packages/SystemUI/res/layout/keyguard_bottom_area.xml b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
+index b4636aa31df2..2aca311dd9b7 100644
+--- a/packages/SystemUI/res/layout/keyguard_bottom_area.xml
++++ b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
+@@ -34,13 +34,13 @@
+             android:id="@+id/face_unlock_icon"
+             android:layout_height="@dimen/keyguard_affordance_fixed_height"
+             android:layout_width="@dimen/keyguard_affordance_fixed_width"
+-            android:layout_marginBottom="@dimen/keyguard_affordance_vertical_offset"
++            android:layout_marginBottom="@dimen/keyguard_lock_height"
+             android:padding="@dimen/keyguard_affordance_fixed_padding"
+             android:layout_gravity="center"
+             android:scaleType="fitCenter"
+             android:tint="#FFFFFF"
+             android:visibility="gone" />
+-            
++
+         <com.android.systemui.statusbar.phone.KeyguardIndicationTextView
+             android:id="@id/keyguard_indication_text"
+             android:layout_width="match_parent"
+-- 
+2.25.1
+

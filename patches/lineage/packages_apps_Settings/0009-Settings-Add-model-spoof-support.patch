@@ -1,0 +1,243 @@
+From d689c38fed956373033da573e12aac2213963d18 Mon Sep 17 00:00:00 2001
+From: Nanhumly <admin@warbler.cc>
+Date: Fri, 29 Dec 2023 11:28:21 +0000
+Subject: [PATCH] Settings: Add model spoof support
+
+Change-Id: I1d275c7dbad2af4a480ef85e57992f93ac80baab
+Signed-off-by: Nanhumly <admin@warbler.cc>
+---
+ res/values-zh-rCN/extra_strings.xml           | 15 +++++
+ res/values-zh-rHK/extra_strings.xml           | 15 +++++
+ res/values-zh-rTW/extra_strings.xml           | 15 +++++
+ res/values/extra_strings.xml                  | 15 +++++
+ res/xml/apps.xml                              |  7 +++
+ res/xml/model_spoof_settings.xml              | 56 +++++++++++++++++++
+ .../applications/ModelspoofSettings.java      | 41 ++++++++++++++
+ 7 files changed, 164 insertions(+)
+ create mode 100644 res/xml/model_spoof_settings.xml
+ create mode 100644 src/com/android/settings/applications/ModelspoofSettings.java
+
+diff --git a/res/values-zh-rCN/extra_strings.xml b/res/values-zh-rCN/extra_strings.xml
+index 67f75d2bd93..6b028e42a19 100644
+--- a/res/values-zh-rCN/extra_strings.xml
++++ b/res/values-zh-rCN/extra_strings.xml
+@@ -31,4 +31,19 @@
+     <!-- Strict standby -->
+     <string name="laboratory_strict_standby_policy_title">严格的应用待机策略</string>
+     <string name="laboratory_strict_standby_policy_summary">这将对“电池用量”受限的应用启用划卡即停，并对其施加更加严格的应用待机限制。所有限制将在电源连接时也保持执行。</string>
++
++    <!-- Model spoof -->
++    <string name="model_spoof_title">机型伪装</string>
++    <string name="model_spoof_summary">对部分应用伪装设备</string>
++    <string name="model_spoof_options_title">选项</string>
++    <string name="model_spoof_gapps_title">Google 应用伪装</string>
++    <string name="model_spoof_gapps_summary">在 Google 应用中将你的设备伪装成 Pixel 设备。</string>
++    <string name="model_spoof_gms_title">Safetynet 伪装</string>
++    <string name="model_spoof_gms_summary">为部分 Google 服务将设备伪装成其他型号，以通过 Safetynet 检测。</string>
++    <string name="model_spoof_games_title">在游戏中解锁更高的刷新率</string>
++    <string name="model_spoof_games_summary">为部分游戏将设备伪装成其他型号，以解锁更高的刷新率。</string>
++    <string name="model_spoof_gphotos_title">无限照片存储</string>
++    <string name="model_spoof_gphotos_summary">将您的设备伪装成 Pixel XL，仅用于为 Google 相册提供无限存储空间进行备份。</string>
++    <string name="model_spoof_netflix_title">Netflix 伪装</string>
++    <string name="model_spoof_netflix_summary">将您的设备伪装成其它型号以获得 Netflix 认证。</string>
+ </resources>
+diff --git a/res/values-zh-rHK/extra_strings.xml b/res/values-zh-rHK/extra_strings.xml
+index 521b8a2f088..5eb9c4bb074 100644
+--- a/res/values-zh-rHK/extra_strings.xml
++++ b/res/values-zh-rHK/extra_strings.xml
+@@ -31,4 +31,19 @@
+     <!-- Strict standby -->
+     <string name="laboratory_strict_standby_policy_title">嚴格的應用程式待機策略</string>
+     <string name="laboratory_strict_standby_policy_summary">這將對「電池用量」受限的應用程式啟用劃卡即停，並對其施加更加嚴格的應用程式待機限制。所有限制將在電源連接時也保持執行。</string>
++
++    <!-- Model spoof -->
++    <string name="model_spoof_title">機型偽裝</string>
++    <string name="model_spoof_summary">對部分應用偽裝設備</string>
++    <string name="model_spoof_options_title">選項</string>
++    <string name="model_spoof_gapps_title">Google 應用機型偽裝</string>
++    <string name="model_spoof_gapps_summary">為部分 Google 應用將您的設備偽裝成 Pixel 設備。</string>
++    <string name="model_spoof_gms_title">Safetynet 偽裝</string>
++    <string name="model_spoof_gms_summary">為部分 Google 服務將您的設備偽裝成其他設備，以通過Safetynet檢測。</string>
++    <string name="model_spoof_games_title">解鎖遊戲高更新率</string>
++    <string name="model_spoof_games_summary">針對部分特定的遊戲將您的設備偽裝成其他設備來解鎖更高的更新率。</string>
++    <string name="model_spoof_gphotos_title">無限相簿儲存空間</string>
++    <string name="model_spoof_gphotos_summary">針對 Google 相簿將您的設備偽裝成 Pixel XL 來取得無限相簿儲存空間。</string>
++    <string name="model_spoof_netflix_title">Netflix 機型偽裝</string>
++    <string name="model_spoof_netflix_summary">針對 Netflix 將您的設備偽裝成其他設備。</string>
+ </resources>
+diff --git a/res/values-zh-rTW/extra_strings.xml b/res/values-zh-rTW/extra_strings.xml
+index 346648cffb1..af2883a3c0f 100644
+--- a/res/values-zh-rTW/extra_strings.xml
++++ b/res/values-zh-rTW/extra_strings.xml
+@@ -31,4 +31,19 @@
+     <!-- Strict standby -->
+     <string name="laboratory_strict_standby_policy_title">嚴格的應用程式待機策略</string>
+     <string name="laboratory_strict_standby_policy_summary">這將對「電池用量」受限的應用程式啟用劃卡即停，並對其施加更加嚴格的應用程式待機限制。所有限制將在電源連接時也保持執行。</string>
++
++    <!-- Model spoof -->
++    <string name="model_spoof_title">機型偽裝</string>
++    <string name="model_spoof_summary">對部分應用偽裝設備</string>
++    <string name="model_spoof_options_title">選項</string>
++    <string name="model_spoof_gapps_title">Google 應用機型偽裝</string>
++    <string name="model_spoof_gapps_summary">為部分 Google 應用將您的設備偽裝成 Pixel 設備。</string>
++    <string name="model_spoof_gms_title">Safetynet 偽裝</string>
++    <string name="model_spoof_gms_summary">為部分 Google 服務將您的設備偽裝成其他設備，以通過Safetynet檢測。</string>
++    <string name="model_spoof_games_title">解鎖遊戲高更新率</string>
++    <string name="model_spoof_games_summary">針對部分特定的遊戲將您的設備偽裝成其他設備來解鎖更高的更新率。</string>
++    <string name="model_spoof_gphotos_title">無限相簿儲存空間</string>
++    <string name="model_spoof_gphotos_summary">針對 Google 相簿將您的設備偽裝成 Pixel XL 來取得無限相簿儲存空間。</string>
++    <string name="model_spoof_netflix_title">Netflix 機型偽裝</string>
++    <string name="model_spoof_netflix_summary">針對 Netflix 將您的設備偽裝成其他設備。</string>
+ </resources>
+diff --git a/res/values/extra_strings.xml b/res/values/extra_strings.xml
+index 7e78bdba20f..d6995db427a 100644
+--- a/res/values/extra_strings.xml
++++ b/res/values/extra_strings.xml
+@@ -31,4 +31,19 @@
+     <!-- Strict standby -->
+     <string name="laboratory_strict_standby_policy_title">Strict standby policy</string>
+     <string name="laboratory_strict_standby_policy_summary">When dismissing from recents, this will force stop apps with restricted battery usage and impose stronger restrictions to them. Also, all app standby restrictions will be imposed even when device is charging.</string>
++
++    <!-- Model spoof -->
++    <string name="model_spoof_title">Model spoof</string>
++    <string name="model_spoof_summary">Model spoofing of some apps</string>
++    <string name="model_spoof_options_title">Options</string>
++    <string name="model_spoof_gapps_title">Google apps spoof</string>
++    <string name="model_spoof_gapps_summary">Spoof your device as Pixel for Google apps</string>
++    <string name="model_spoof_gms_title">Passed Safetynet check</string>
++    <string name="model_spoof_gms_summary">Spoof your device as different model for Google services to passed Safetynet check</string>
++    <string name="model_spoof_games_title">Unlock higher FPS in games</string>
++    <string name="model_spoof_games_summary">Spoof your device as different model for specific games to unlock higher FPS</string>
++    <string name="model_spoof_gphotos_title">Unlimited Photos storage</string>
++    <string name="model_spoof_gphotos_summary">Spoof your device as Pixel XL for Google Photos app only to provide unlimited storage for backup</string>
++    <string name="model_spoof_netflix_title">Netflix spoof</string>
++    <string name="model_spoof_netflix_summary">Spoof your device as different model for Netflix</string>
+ </resources>
+diff --git a/res/xml/apps.xml b/res/xml/apps.xml
+index c4313f645e4..34a813fe97d 100644
+--- a/res/xml/apps.xml
++++ b/res/xml/apps.xml
+@@ -126,4 +126,11 @@
+         </Preference>
+     </PreferenceCategory>
+ 
++    <Preference
++        android:key="model_spoof_settings"
++        android:title="@string/model_spoof_title"
++        android:summary="@string/model_spoof_summary"
++        android:fragment="com.android.settings.applications.ModelspoofSettings"
++        android:order="25"/>
++
+ </PreferenceScreen>
+diff --git a/res/xml/model_spoof_settings.xml b/res/xml/model_spoof_settings.xml
+new file mode 100644
+index 00000000000..5e4f53d887f
+--- /dev/null
++++ b/res/xml/model_spoof_settings.xml
+@@ -0,0 +1,56 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2023 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<PreferenceScreen
++    android:title="@string/model_spoof_title"
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:settings="http://schemas.android.com/apk/res/com.android.settings">
++
++    <PreferenceCategory
++        android:title="@string/model_spoof_options_title">
++
++        <lineageos.preference.SecureSettingSwitchPreference
++            android:key="persist.sys.pixelprops.gapps"
++            android:title="@string/model_spoof_gapps_title"
++            android:summary="@string/model_spoof_gapps_summary"
++            android:defaultValue="true"/>
++
++        <lineageos.preference.SystemPropertySwitchPreference
++            android:key="persist.sys.pixelprops.gms"
++            android:title="@string/model_spoof_gms_title"
++            android:summary="@string/model_spoof_gms_summary"
++            android:defaultValue="true"/>
++
++        <lineageos.preference.SystemPropertySwitchPreference
++            android:key="persist.sys.pixelprops.games"
++            android:title="@string/model_spoof_games_title"
++            android:summary="@string/model_spoof_games_summary"
++            android:defaultValue="false"/>
++
++        <lineageos.preference.SystemPropertySwitchPreference
++            android:key="persist.sys.pixelprops.gphotos"
++            android:title="@string/model_spoof_gphotos_title"
++            android:summary="@string/model_spoof_gphotos_summary"
++            android:defaultValue="false"/>
++
++        <lineageos.preference.SystemPropertySwitchPreference
++            android:key="persist.sys.pixelprops.netflix"
++            android:title="@string/model_spoof_netflix_title"
++            android:summary="@string/model_spoof_netflix_summary"
++            android:defaultValue="false"/>
++
++    </PreferenceCategory>
++</PreferenceScreen>
+diff --git a/src/com/android/settings/applications/ModelspoofSettings.java b/src/com/android/settings/applications/ModelspoofSettings.java
+new file mode 100644
+index 00000000000..4a56abe894b
+--- /dev/null
++++ b/src/com/android/settings/applications/ModelspoofSettings.java
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (C) 2023 The LineageOS Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.settings.applications;
++
++import android.app.settings.SettingsEnums;
++import android.os.Bundle;
++
++import androidx.preference.Preference;
++
++import com.android.internal.logging.nano.MetricsProto;
++
++import com.android.settings.R;
++import com.android.settings.SettingsPreferenceFragment;
++
++public class ModelspoofSettings extends SettingsPreferenceFragment {
++
++    @Override
++    public void onCreate(Bundle icicle) {
++        super.onCreate(icicle);
++        addPreferencesFromResource(R.xml.model_spoof_settings);
++    }
++
++    @Override
++    public int getMetricsCategory() {
++        return MetricsProto.MetricsEvent.EXTRA_SETTINGS;
++    }
++}
+-- 
+2.25.1
+

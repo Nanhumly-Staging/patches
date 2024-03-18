@@ -1,0 +1,69 @@
+From fb589a4d077b2b50489bbab3200a8a93f193aa17 Mon Sep 17 00:00:00 2001
+From: someone5678 <someone5678@users.noreply.github.com>
+Date: Fri, 8 Dec 2023 00:34:19 +0900
+Subject: [PATCH 09/11] ParanoidSense: Adapt to Android 14 QPR1
+
+Change-Id: I0d980ea4399d044eeefde4ed7d56bb7e0896acb4
+---
+ .../biometrics/sensors/face/sense/SenseProvider.java   | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
+index 566d69358ec8..34d009d6933a 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
++++ b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
+@@ -53,6 +53,7 @@ import android.util.proto.ProtoOutputStream;
+ import android.view.Surface;
+ 
+ import com.android.internal.annotations.VisibleForTesting;
++import com.android.server.biometrics.AuthenticationStatsCollector;
+ import com.android.server.biometrics.SensorServiceStateProto;
+ import com.android.server.biometrics.SensorStateProto;
+ import com.android.server.biometrics.UserStateProto;
+@@ -62,6 +63,7 @@ import com.android.server.biometrics.log.BiometricLogger;
+ import com.android.server.biometrics.sensors.AcquisitionClient;
+ import com.android.server.biometrics.sensors.AuthenticationConsumer;
+ import com.android.server.biometrics.sensors.BaseClientMonitor;
++import com.android.server.biometrics.sensors.BiometricNotificationImpl;
+ import com.android.server.biometrics.sensors.BiometricNotificationUtils;
+ import com.android.server.biometrics.sensors.BiometricScheduler;
+ import com.android.server.biometrics.sensors.BiometricStateCallback;
+@@ -127,6 +129,7 @@ public class SenseProvider implements ServiceProvider {
+     @Nullable private IBiometricsFace mDaemon;
+     @NonNull private final HalResultController mHalResultController;
+     @NonNull private final BiometricContext mBiometricContext;
++    @NonNull private final AuthenticationStatsCollector mAuthenticationStatsCollector;
+     SparseArray<ISenseService> mServices;
+     // for requests that do not use biometric prompt
+     @NonNull private final AtomicLong mRequestCounter = new AtomicLong(0);
+@@ -368,6 +371,9 @@ public class SenseProvider implements ServiceProvider {
+         });
+         mCurrentUserId = ActivityManager.getCurrentUser();
+ 
++        mAuthenticationStatsCollector = new AuthenticationStatsCollector(mContext,
++                BiometricsProtoEnums.MODALITY_FACE, new BiometricNotificationImpl());
++
+         try {
+             ActivityManager.getService().registerUserSwitchObserver(mUserSwitchObserver, TAG);
+         } catch (RemoteException e) {
+@@ -562,7 +568,7 @@ public class SenseProvider implements ServiceProvider {
+             }
+             scheduleUpdateActiveUserWithoutHandler(userId);
+ 
+-            BiometricNotificationUtils.cancelReEnrollNotification(mContext);
++            BiometricNotificationUtils.cancelFaceReEnrollNotification(mContext);
+ 
+             final FaceEnrollClient client = new FaceEnrollClient(mContext, mLazyDaemon, token,
+                     new ClientMonitorCallbackConverter(receiver), userId, hardwareAuthToken,
+@@ -1073,7 +1079,7 @@ public class SenseProvider implements ServiceProvider {
+ 
+     private BiometricLogger createLogger(int statsAction, int statsClient) {
+         return new BiometricLogger(mContext, BiometricsProtoEnums.MODALITY_FACE,
+-                statsAction, statsClient);
++                statsAction, statsClient, mAuthenticationStatsCollector);
+     }
+ 
+     /**
+-- 
+2.25.1
+

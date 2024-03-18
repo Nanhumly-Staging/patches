@@ -1,0 +1,39 @@
+From 9f388480adcae2ac806e9a162e7bec0825897e86 Mon Sep 17 00:00:00 2001
+From: Alberto Ponces <ponces26@gmail.com>
+Date: Sun, 26 Nov 2023 12:53:36 +0100
+Subject: [PATCH 1/2] config: Switch to AOSPA's face unlock implementation
+
+Co-authored-by: Adithya R <gh0strider.2k18.reborn@gmail.com>
+Change-Id: Ie67b0087c0c5367b8f72a90d4dd5edfb3f96842a
+---
+ config/common.mk | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/config/common.mk b/config/common.mk
+index 554e9f2c..e2e95461 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -66,6 +66,20 @@ PRODUCT_COPY_FILES += \
+ PRODUCT_COPY_FILES += \
+     frameworks/base/data/keyboards/Vendor_045e_Product_028e.kl:$(TARGET_COPY_OUT_PRODUCT)/usr/keylayout/Vendor_045e_Product_0719.kl
+ 
++# Face Unlock
++TARGET_FACE_UNLOCK_SUPPORTED ?= $(TARGET_SUPPORTS_64_BIT_APPS)
++
++ifeq ($(TARGET_FACE_UNLOCK_SUPPORTED),true)
++PRODUCT_PACKAGES += \
++    ParanoidSense
++
++PRODUCT_SYSTEM_EXT_PROPERTIES += \
++    ro.face.sense_service=true
++
++PRODUCT_COPY_FILES += \
++    frameworks/native/data/etc/android.hardware.biometrics.face.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/android.hardware.biometrics.face.xml
++endif
++
+ # This is Lineage!
+ PRODUCT_COPY_FILES += \
+     vendor/lineage/config/permissions/org.lineageos.android.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/org.lineageos.android.xml
+-- 
+2.25.1
+

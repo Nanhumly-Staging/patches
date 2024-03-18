@@ -1,0 +1,331 @@
+From 963d83cd94c9a171788eb360b4110012b12473b8 Mon Sep 17 00:00:00 2001
+From: LibXZR <i@xzr.moe>
+Date: Sat, 11 Jun 2022 16:13:53 +0800
+Subject: [PATCH] [SQUASH]base: Add support for strict standby policy
+
+When dismissing from recents, this will force stop apps with restricted
+battery usage and put them into RESTRICTED standby bucket. Also all
+restrictions will be imposed even when device is charging.
+
+This can be useful to kill dirty vigorous Chinese apps.
+
+Change-Id: I8f075ef48c5775971e3e0b8b1ea843d70a2e44c4
+Signed-off-by: LibXZR <i@xzr.moe>
+
+StrictStandby: Offload force stop onto lock-free context
+
+Fixes potential dead lock when plenty of tasks get removed at the
+same time.
+
+Change-Id: Ib26dc55bfb3b86b29f25e25887406c7859f66e34
+Signed-off-by: LibXZR <i@xzr.moe>
+
+BroadcastQueue: Block MEDIA_MOUNTED broadcast for restricted apps
+
+This blocks ACTION_MEDIA_MOUNTED for victims of "strict standby" and
+"force background freezer". Some apps e.g. MobileQQ are using this for
+boot completed notification, which could block the process of serialized
+broadcast for quite a while.
+
+Also move `=` to `.equals()` because the latter one is the proper way
+for comparing strings, although the former one is just working fine
+statically within system server context.
+
+Change-Id: I46a85e7d9f386b10e6001697cf98f77ff058c3e7
+Signed-off-by: LibXZR <i@xzr.moe>
+
+BroadcastQueue: Skip delivering broadcasts to strict standby apps
+
+Fixes plenty of timeouts blocking the whole queue.
+
+Also strict standby is enhanced that nothing could wakeup a
+static broadcast receiver.
+
+Change-Id: I7b748a63287319e765d1548b28987f56be5e599e
+Signed-off-by: LibXZR <i@xzr.moe>
+
+base: Add more restrictions (jobs, alarms)
+Change-Id: Icdb9207bcd09a754db05e2c3e397947a79d7140d
+---
+ .../server/usage/AppStandbyInternal.java      |  2 ++
+ .../android/server/AppStateTrackerImpl.java   | 15 ++++++++++
+ .../server/usage/AppStandbyController.java    | 28 ++++++++++++++++++-
+ core/java/android/provider/Settings.java      |  9 ++++++
+ .../server/am/ActivityManagerService.java     |  8 ++++++
+ .../android/server/am/BroadcastQueueImpl.java | 12 ++++++++
+ .../server/wm/ActivityTaskManagerService.java |  4 +++
+ .../server/wm/ActivityTaskSupervisor.java     | 23 +++++++++++++++
+ 8 files changed, 100 insertions(+), 1 deletion(-)
+
+diff --git a/apex/jobscheduler/framework/java/com/android/server/usage/AppStandbyInternal.java b/apex/jobscheduler/framework/java/com/android/server/usage/AppStandbyInternal.java
+index f50a90248030..2350a82886c3 100644
+--- a/apex/jobscheduler/framework/java/com/android/server/usage/AppStandbyInternal.java
++++ b/apex/jobscheduler/framework/java/com/android/server/usage/AppStandbyInternal.java
+@@ -251,6 +251,8 @@ public interface AppStandbyInternal {
+     void dumpState(String[] args, PrintWriter pw);
+ 
+     boolean isAppIdleEnabled();
++    
++    boolean isStrictStandbyPolicyEnabled();
+ 
+     /**
+      * Returns the duration (in millis) for the window where events occurring will be
+diff --git a/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java b/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java
+index d002d69c320c..c99ef08c0210 100644
+--- a/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java
++++ b/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java
+@@ -1130,6 +1130,9 @@ public class AppStateTrackerImpl implements AppStateTracker {
+             return false;
+         }
+         synchronized (mLock) {
++            if (isAppRestricted(uid, packageName)) {
++                return true;
++            }
+             final int appId = UserHandle.getAppId(uid);
+             if (ArrayUtils.contains(mPowerExemptAllAppIds, appId)) {
+                 return false;
+@@ -1174,6 +1177,9 @@ public class AppStateTrackerImpl implements AppStateTracker {
+             return false;
+         }
+         synchronized (mLock) {
++            if (isAppRestricted(uid, packageName)) {
++                return true;
++            }
+             final int appId = UserHandle.getAppId(uid);
+             if (ArrayUtils.contains(mPowerExemptAllAppIds, appId)
+                     || ArrayUtils.contains(mTempExemptAppIds, appId)) {
+@@ -1295,6 +1301,15 @@ public class AppStateTrackerImpl implements AppStateTracker {
+         }
+     }
+ 
++    /**
++     * @return whether the app is restricted battery usage
++     */
++    public boolean isAppRestricted(int uid, String packageName) {
++        return mAppOpsManager.checkOpNoThrow(
++                AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
++                uid, packageName) != AppOpsManager.MODE_ALLOWED;
++    }
++
+     /**
+      * Dump the internal state to the given PrintWriter. Can be included in the dump
+      * of a binder service to be output on the shell command "dumpsys".
+diff --git a/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java b/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
+index 7d3837786be9..faa6e4089daf 100644
+--- a/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
++++ b/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
+@@ -505,6 +505,8 @@ public class AppStandbyController
+     private AppOpsManager mAppOpsManager;
+     Injector mInjector;
+ 
++    private boolean mStrictStandbyPolicyEnabled;
++
+     private static class Pool<T> {
+         private final T[] mArray;
+         private int mSize = 0;
+@@ -642,11 +644,29 @@ public class AppStandbyController
+         }
+     }
+ 
++    private void setStrictStandbyPolicyEnabled(boolean enabled) {
++        if (mStrictStandbyPolicyEnabled == enabled)
++            return;
++
++        synchronized (mAppIdleLock) {
++            final boolean oldParoleState = isInParole();
++            mStrictStandbyPolicyEnabled = enabled;
++            if (isInParole() != oldParoleState) {
++                postParoleStateChanged();
++            }
++        }
++    }
++
+     @Override
+     public boolean isAppIdleEnabled() {
+         return mAppIdleEnabled;
+     }
+ 
++    @Override
++    public boolean isStrictStandbyPolicyEnabled() {
++        return mStrictStandbyPolicyEnabled;
++    }
++
+     @Override
+     public void onBootPhase(int phase) {
+         mInjector.onBootPhase(phase);
+@@ -866,7 +886,7 @@ public class AppStandbyController
+ 
+     @Override
+     public boolean isInParole() {
+-        return !mAppIdleEnabled || mIsCharging;
++        return !mAppIdleEnabled || mIsCharging && !mStrictStandbyPolicyEnabled;
+     }
+ 
+     private void postParoleStateChanged() {
+@@ -3055,6 +3075,8 @@ public class AppStandbyController
+             // ADAPTIVE_BATTERY_MANAGEMENT_ENABLED is a user setting, so it has to stay in Settings.
+             cr.registerContentObserver(Global.getUriFor(Global.ADAPTIVE_BATTERY_MANAGEMENT_ENABLED),
+                     false, this);
++            cr.registerContentObserver(Global.getUriFor(Global.STRICT_STANDBY_POLICY),
++                    false, this);
+             mInjector.registerDeviceConfigPropertiesChangedListener(this);
+             // Load all the constants.
+             // postOneTimeCheckIdleStates() doesn't need to be called on boot.
+@@ -3252,6 +3274,10 @@ public class AppStandbyController
+                                 Global.ADAPTIVE_BATTERY_MANAGEMENT_ENABLED));
+             }
+ 
++            setStrictStandbyPolicyEnabled(
++                    Global.getInt(mContext.getContentResolver(),
++                            Global.STRICT_STANDBY_POLICY, 0) == 1);
++
+             setAppIdleEnabled(mInjector.isAppIdleEnabled());
+         }
+ 
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index 1faed1eee234..3b7284579f5b 100644
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -18161,6 +18161,15 @@ public final class Settings {
+          */
+         public static final String REPAIR_MODE_ACTIVE = "repair_mode_active";
+ 
++        /**
++         * Whether strict standby policy should be used. When dismissing from recents,
++         * this will force stop apps with restricted battery usage and put them into
++         * RESTRICTED standby bucket. Also all restrictions will be imposed even when
++         * device is charging.
++         * @hide
++         */
++        public static final String STRICT_STANDBY_POLICY = "strict_standby_policy";
++
+         /**
+          * Settings migrated from Wear OS settings provider.
+          * @hide
+diff --git a/services/core/java/com/android/server/am/ActivityManagerService.java b/services/core/java/com/android/server/am/ActivityManagerService.java
+index 4dad2d560526..1f5e63c954f3 100644
+--- a/services/core/java/com/android/server/am/ActivityManagerService.java
++++ b/services/core/java/com/android/server/am/ActivityManagerService.java
+@@ -20267,4 +20267,12 @@ public class ActivityManagerService extends IActivityManager.Stub
+         }
+         mOomAdjuster.mCachedAppOptimizer.binderError(debugPid, app, code, flags, err);
+     }
++
++    boolean isBackgroundRestricted(ApplicationInfo info) {
++        return mActivityTaskManager.mAppStandbyInternal.isStrictStandbyPolicyEnabled() &&
++                getAppOpsManager().checkOpNoThrow(
++                        AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
++                        info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED;
++    }
++
+ }
+diff --git a/services/core/java/com/android/server/am/BroadcastQueueImpl.java b/services/core/java/com/android/server/am/BroadcastQueueImpl.java
+index 127c5b389d79..0da440aa4ab4 100644
+--- a/services/core/java/com/android/server/am/BroadcastQueueImpl.java
++++ b/services/core/java/com/android/server/am/BroadcastQueueImpl.java
+@@ -1406,6 +1406,18 @@ public class BroadcastQueueImpl extends BroadcastQueue {
+             }
+         }
+ 
++        if (!skip) {
++            if (app == null) {
++                // Application not running, skip if blacklisted.
++                if (mService.isBackgroundRestricted(info.activityInfo.applicationInfo)) {
++                    Slog.i(TAG, "Skipping delivery " + r.intent
++                                + " to " + info.activityInfo.applicationInfo.packageName
++                                + " because of restriction");
++                    skip = true;
++                }
++            }
++        }
++
+         if (skip) {
+             if (DEBUG_BROADCAST)  Slog.v(TAG_BROADCAST,
+                     "Skipping delivery of ordered [" + mQueueName + "] "
+diff --git a/services/core/java/com/android/server/wm/ActivityTaskManagerService.java b/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
+index 8382fa97c5c5..fe196a01486b 100644
+--- a/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
++++ b/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
+@@ -278,6 +278,7 @@ import com.android.server.sdksandbox.SdkSandboxManagerLocal;
+ import com.android.server.statusbar.StatusBarManagerInternal;
+ import com.android.server.uri.NeededUriGrants;
+ import com.android.server.uri.UriGrantsManagerInternal;
++import com.android.server.usage.AppStandbyInternal;
+ import com.android.server.wallpaper.WallpaperManagerInternal;
+ 
+ import org.lineageos.internal.applications.LineageActivityManager;
+@@ -791,6 +792,8 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
+     private int mDeviceOwnerUid = Process.INVALID_UID;
+ 
+     private Set<Integer> mProfileOwnerUids = new ArraySet<Integer>();
++    
++    public AppStandbyInternal mAppStandbyInternal;
+ 
+     // Lineage sdk activity related helper
+     private LineageActivityManager mLineageActivityManager;
+@@ -878,6 +881,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
+             // TODO(b/258792202) Cleanup once ASM is ready to launch
+             ActivitySecurityModelFeatureFlags.initialize(mContext.getMainExecutor(), pm);
+         }
++        mAppStandbyInternal = LocalServices.getService(AppStandbyInternal.class);
+     }
+ 
+     public void onInitPowerManagement() {
+diff --git a/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java b/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
+index cc130c407690..83eddc534038 100644
+--- a/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
++++ b/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
+@@ -38,6 +38,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+ import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
+ import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
++import static android.app.usage.UsageStatsManager.REASON_MAIN_FORCED_BY_USER;
+ import static android.content.pm.PackageManager.NOTIFY_PACKAGE_USE_ACTIVITY;
+ import static android.content.pm.PackageManager.PERMISSION_DENIED;
+ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+@@ -213,6 +214,7 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
+     private static final int REPORT_PIP_MODE_CHANGED_MSG = FIRST_SUPERVISOR_TASK_MSG + 15;
+     private static final int START_HOME_MSG = FIRST_SUPERVISOR_TASK_MSG + 16;
+     private static final int TOP_RESUMED_STATE_LOSS_TIMEOUT_MSG = FIRST_SUPERVISOR_TASK_MSG + 17;
++    private static final int STRICT_STANDBY_KILL_MSG = FIRST_SUPERVISOR_TASK_MSG + 18;
+ 
+     // Used to indicate that windows of activities should be preserved during the resize.
+     static final boolean PRESERVE_WINDOWS = true;
+@@ -1913,6 +1915,11 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
+     private void killTaskProcessesIfPossible(Task task) {
+         task.mKillProcessesOnDestroyed = false;
+         final String pkg = task.getBasePackageName();
++
++        if (mService.mAppStandbyInternal.isStrictStandbyPolicyEnabled()) {
++            mHandler.sendMessage(mHandler.obtainMessage(STRICT_STANDBY_KILL_MSG, task));
++        }
++
+         ArrayList<Object> procsToKill = null;
+         ArrayMap<String, SparseArray<WindowProcessController>> pmap =
+                 mService.mProcessNames.getMap();
+@@ -2715,6 +2722,22 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
+                                 "restartActivityProcessTimeout");
+                     }
+                 } break;
++                case STRICT_STANDBY_KILL_MSG: {
++                    Task task = (Task) msg.obj;
++                    String pkg = task.getBaseIntent().getComponent().getPackageName();
++
++                    if (getAppOpsManager().checkOpNoThrow(
++                            AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
++                            task.effectiveUid, pkg) != AppOpsManager.MODE_ALLOWED) {
++                        try {
++                            ActivityManager.getService().forceStopPackage(pkg, task.mUserId);
++                        } catch (RemoteException e) {
++                            Slog.e(TAG, "Strict standby force stop failed...");
++                        }
++                        mService.mAppStandbyInternal.restrictApp(
++                                pkg, task.mUserId, REASON_MAIN_FORCED_BY_USER, 0);
++                    }
++                } break;
+             }
+         }
+ 
+-- 
+2.25.1
+

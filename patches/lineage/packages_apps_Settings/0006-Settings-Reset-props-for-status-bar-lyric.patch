@@ -1,0 +1,86 @@
+From 9f315c1fc312a31c8234c217ecc0b05b61b1cd82 Mon Sep 17 00:00:00 2001
+From: cjybyjk <cjybyjk@zjnu.edu.cn>
+Date: Thu, 4 Aug 2022 10:51:12 +0000
+Subject: [PATCH] Settings: Reset props for status bar lyric [2/2]
+
+Change-Id: I9d808ed46288849aae5871cef95437208a1d2663
+Signed-off-by: Kujou Yuko <i@779.moe>
+---
+ res/values-zh-rCN/extra_strings.xml   |  3 +++
+ res/values-zh-rHK/extra_strings.xml   |  3 +++
+ res/values-zh-rTW/extra_strings.xml   |  3 +++
+ res/values/extra_strings.xml          |  3 +++
+ res/xml/status_bar_lyric_settings.xml | 11 +++++++++++
+ 5 files changed, 23 insertions(+)
+
+diff --git a/res/values-zh-rCN/extra_strings.xml b/res/values-zh-rCN/extra_strings.xml
+index f786d103e9a..d41f3f80839 100644
+--- a/res/values-zh-rCN/extra_strings.xml
++++ b/res/values-zh-rCN/extra_strings.xml
+@@ -24,4 +24,7 @@
+     <string name="status_bar_lyric_title">状态栏歌词</string>
+     <string name="status_bar_lyric_summary">状态栏歌词（需要应用支持）</string>
+     <string name="status_bar_show_lyric_title">启用状态栏歌词</string>
++    <string name="status_bar_lyric_options_title">选项</string>
++    <string name="disguise_props_for_music_app_title">对音乐应用伪装设备</string>
++    <string name="disguise_props_for_music_app_summary">在一些音乐应用中伪装设备以支持状态栏歌词。更改此开关后，您必须重新启动相关应用才能使更改生效。</string>
+ </resources>
+diff --git a/res/values-zh-rHK/extra_strings.xml b/res/values-zh-rHK/extra_strings.xml
+index bddd2f54daf..57aa2066ad7 100644
+--- a/res/values-zh-rHK/extra_strings.xml
++++ b/res/values-zh-rHK/extra_strings.xml
+@@ -24,4 +24,7 @@
+     <string name="status_bar_lyric_title">狀態欄歌詞</string>
+     <string name="status_bar_lyric_summary">顯示歌詞在狀態欄（需要 App 有支援此功能）</string>
+     <string name="status_bar_show_lyric_title">啟用狀態欄歌詞</string>
++    <string name="status_bar_lyric_options_title">選項</string>
++    <string name="disguise_props_for_music_app_title">對音樂應用偽裝設備</string>
++    <string name="disguise_props_for_music_app_summary">在一些音樂應用中偽裝設備以支持狀態欄歌詞。更改此開關後，您必須重新啟動相關程式才能使更改生效。</string>
+ </resources>
+diff --git a/res/values-zh-rTW/extra_strings.xml b/res/values-zh-rTW/extra_strings.xml
+index 6f86dac2c43..40167ad2b8f 100644
+--- a/res/values-zh-rTW/extra_strings.xml
++++ b/res/values-zh-rTW/extra_strings.xml
+@@ -24,4 +24,7 @@
+     <string name="status_bar_lyric_title">狀態欄歌詞</string>
+     <string name="status_bar_lyric_summary">顯示歌詞在狀態欄（需要 App 有支援此功能）</string>
+     <string name="status_bar_show_lyric_title">啟用狀態欄歌詞</string>
++    <string name="status_bar_lyric_options_title">選項</string>
++    <string name="disguise_props_for_music_app_title">對音樂應用偽裝設備</string>
++    <string name="disguise_props_for_music_app_summary">在一些音樂應用中偽裝設備以支持狀態欄歌詞。更改此開關後，您必須重新啟動相關程式才能使更改生效。</string>
+ </resources>
+diff --git a/res/values/extra_strings.xml b/res/values/extra_strings.xml
+index 77a9237feeb..adb25b628e5 100644
+--- a/res/values/extra_strings.xml
++++ b/res/values/extra_strings.xml
+@@ -24,4 +24,7 @@
+     <string name="status_bar_lyric_title">Status bar lyric</string>
+     <string name="status_bar_lyric_summary">Show lyric in status bar (need app support)</string>
+     <string name="status_bar_show_lyric_title">Enable status bar lyric</string>
++    <string name="status_bar_lyric_options_title">Options</string>
++    <string name="disguise_props_for_music_app_title">Disguise device for music apps</string>
++    <string name="disguise_props_for_music_app_summary">Disguise device in some music applications for support status bar lyric. After changing this toggle, you have to restart applications for the change to take effect.</string>
+ </resources>
+diff --git a/res/xml/status_bar_lyric_settings.xml b/res/xml/status_bar_lyric_settings.xml
+index 5c5e5fde24b..f70c7bdd545 100644
+--- a/res/xml/status_bar_lyric_settings.xml
++++ b/res/xml/status_bar_lyric_settings.xml
+@@ -23,4 +23,15 @@
+         android:key="status_bar_show_lyric"
+         android:title="@string/status_bar_show_lyric_title"
+         android:defaultValue="false"/>
++
++    <PreferenceCategory
++        android:title="@string/status_bar_lyric_options_title">
++
++        <lineageos.preference.SystemPropertySwitchPreference
++            android:key="persist.sys.disguise_props_for_music_app"
++            android:title="@string/disguise_props_for_music_app_title"
++            android:summary="@string/disguise_props_for_music_app_summary"
++            android:dependency="status_bar_show_lyric"
++            android:defaultValue="false"/>
++    </PreferenceCategory>
+ </PreferenceScreen>
+-- 
+2.25.1
+

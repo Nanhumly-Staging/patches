@@ -1,0 +1,42 @@
+From da508eccdd8c1218adeaf1487c4d01011874b2ee Mon Sep 17 00:00:00 2001
+From: Fabian Leutenegger <fabian.leutenegger@bluewin.ch>
+Date: Thu, 7 Dec 2023 08:26:41 +0100
+Subject: [PATCH 08/11] SystemUI: FaceUnlock: Allow to overlay
+ FaceUnlockImageView bottom margin
+
+Not all devices work with the current margin, so let users overlay it
+
+Change-Id: I8b4cb08f5cfda6efd45f6a8d99fdac73730303f6
+---
+ packages/SystemUI/res/layout/keyguard_bottom_area.xml | 2 +-
+ packages/SystemUI/res/values/lineage_dimens.xml       | 3 +++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/packages/SystemUI/res/layout/keyguard_bottom_area.xml b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
+index 2aca311dd9b7..ece1dd2d766a 100644
+--- a/packages/SystemUI/res/layout/keyguard_bottom_area.xml
++++ b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
+@@ -34,7 +34,7 @@
+             android:id="@+id/face_unlock_icon"
+             android:layout_height="@dimen/keyguard_affordance_fixed_height"
+             android:layout_width="@dimen/keyguard_affordance_fixed_width"
+-            android:layout_marginBottom="@dimen/keyguard_lock_height"
++            android:layout_marginBottom="@dimen/keyguard_face_unlock_margin_bottom"
+             android:padding="@dimen/keyguard_affordance_fixed_padding"
+             android:layout_gravity="center"
+             android:scaleType="fitCenter"
+diff --git a/packages/SystemUI/res/values/lineage_dimens.xml b/packages/SystemUI/res/values/lineage_dimens.xml
+index 9f98f37f0290..74899e4f957e 100644
+--- a/packages/SystemUI/res/values/lineage_dimens.xml
++++ b/packages/SystemUI/res/values/lineage_dimens.xml
+@@ -25,4 +25,7 @@
+     <!-- Lyric -->
+     <dimen name="lyric_icon_margin_end">4dp</dimen>
+     <dimen name="lyric_padding_end">4dp</dimen>
++    
++    <!-- Height of the faceunlock image view -->
++    <dimen name="keyguard_face_unlock_margin_bottom">@dimen/keyguard_lock_height</dimen>
+ </resources>
+-- 
+2.25.1
+

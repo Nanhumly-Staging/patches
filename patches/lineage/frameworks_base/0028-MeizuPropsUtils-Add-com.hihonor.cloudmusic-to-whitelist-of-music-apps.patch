@@ -1,0 +1,30 @@
+From 732f00d067308c5109c0189b178488e13710b68c Mon Sep 17 00:00:00 2001
+From: Majokeiko <keiko23333@gmail.com>
+Date: Sun, 26 Nov 2023 12:15:22 +0800
+Subject: [PATCH 2/2] MeizuPropsUtils: Add com.hihonor.cloudmusic to whitelist of
+ music apps
+
+*It also supports Status bar lyric.
+
+Change-Id: I2427775fd2d06928d730de663d1fa4397b892b07
+---
+ .../com/android/internal/util/lineage/MeizuPropsUtils.java     | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java b/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java
+index a4d2a6ad8c1f..e15db89b887e 100644
+--- a/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java
++++ b/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java
+@@ -39,7 +39,8 @@ public class MeizuPropsUtils {
+         "com.kugou.android.lite",
+         "cmccwm.mobilemusic",
+         "cn.kuwo.player",
+-        "com.meizu.media.music"
++        "com.meizu.media.music",
++        "com.hihonor.cloudmusic"
+     };
+ 
+     static {
+-- 
+2.25.1
+

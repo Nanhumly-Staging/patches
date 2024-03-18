@@ -1,0 +1,33 @@
+From 70a75876c3aaf620622cbe0d56df6662bc8ccb4c Mon Sep 17 00:00:00 2001
+From: Nanhumly <admin@warbler.cc>
+Date: Wed, 6 Mar 2024 12:15:04 +0000
+Subject: [PATCH] update current.txt
+
+Change-Id: I1371dd43fc3e32b183fbfc293ab458ad32d2e1a9
+---
+ core/api/current.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/core/api/current.txt b/core/api/current.txt
+index 2406d7466998..3398a2ec716a 100644
+--- a/core/api/current.txt
++++ b/core/api/current.txt
+@@ -6286,6 +6286,7 @@ package android.app {
+     field public static final String EXTRA_TITLE_BIG = "android.title.big";
+     field public static final String EXTRA_VERIFICATION_ICON = "android.verificationIcon";
+     field public static final String EXTRA_VERIFICATION_TEXT = "android.verificationText";
++    field public static final int FLAG_ALWAYS_SHOW_TICKER = 16777216; // 0x1000000
+     field public static final int FLAG_AUTO_CANCEL = 16; // 0x10
+     field public static final int FLAG_BUBBLE = 4096; // 0x1000
+     field public static final int FLAG_FOREGROUND_SERVICE = 64; // 0x40
+@@ -6296,7 +6297,6 @@ package android.app {
+     field public static final int FLAG_NO_CLEAR = 32; // 0x20
+     field public static final int FLAG_ONGOING_EVENT = 2; // 0x2
+     field public static final int FLAG_ONLY_ALERT_ONCE = 8; // 0x8
+-    field public static final int FLAG_ALWAYS_SHOW_TICKER = 16777216; // 0x1000000
+     field public static final int FLAG_ONLY_UPDATE_TICKER = 33554432; // 0x2000000
+     field @Deprecated public static final int FLAG_SHOW_LIGHTS = 1; // 0x1
+     field public static final int FOREGROUND_SERVICE_DEFAULT = 0; // 0x0
+-- 
+2.25.1
+

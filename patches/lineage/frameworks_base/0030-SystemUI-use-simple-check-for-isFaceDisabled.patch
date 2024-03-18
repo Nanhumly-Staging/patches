@@ -1,0 +1,33 @@
+From 81215e1f58e60acf72f064458b5b143da4cc465d Mon Sep 17 00:00:00 2001
+From: Ali B <abittin@gmail.com>
+Date: Fri, 15 Jan 2021 23:40:12 +0300
+Subject: [PATCH 02/11] SystemUI: use simple check for isFaceDisabled
+
+Checking if IPC is whitelisted causes an fc. So use
+a more direct approacy and assume it is.
+
+Change-Id: I0f8ab8ee816466e64f54dccd80de1a09e6c09d01
+---
+ .../src/com/android/keyguard/KeyguardUpdateMonitor.java      | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java b/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
+index eb083e8ed73f..50b6ac2186a9 100644
+--- a/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
++++ b/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
+@@ -1547,10 +1547,9 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
+     @Deprecated
+     private boolean isFaceDisabled(int userId) {
+         // TODO(b/140035044)
+-        return whitelistIpcs(() ->
+-                (mDevicePolicyManager.getKeyguardDisabledFeatures(null, userId)
++        return (mDevicePolicyManager.getKeyguardDisabledFeatures(null, userId)
+                         & DevicePolicyManager.KEYGUARD_DISABLE_FACE) != 0
+-                || isSimPinSecure());
++                || isSimPinSecure();
+     }
+ 
+     /**
+-- 
+2.25.1
+

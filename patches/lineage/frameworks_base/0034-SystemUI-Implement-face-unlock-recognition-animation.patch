@@ -1,0 +1,653 @@
+From 876f0ae35f9795e5716525b5e0951640be4a6798 Mon Sep 17 00:00:00 2001
+From: minaripenguin <minaripenguin@users.noreply.github.com>
+Date: Thu, 30 Nov 2023 10:39:01 +0800
+Subject: [PATCH 06/11] SystemUI: Implement face unlock recognition animation
+ and text
+
+Co-authored-by: jhenrique09 <jhsv09@gmail.com>
+Change-Id: I5ae7e39d3c8e31355a052d86930a36473fb80769
+Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+---
+ .../res/drawable/face_not_verified.xml        |  16 ++
+ .../SystemUI/res/drawable/face_scanning.xml   |  10 +
+ .../SystemUI/res/drawable/face_success.xml    |  16 ++
+ .../res/layout/keyguard_bottom_area.xml       |  11 ++
+ .../SystemUI/res/values-de/derp_strings.xml   | 174 ++++++++++++++++++
+ .../res/values-zh-rCN/lineage_strings.xml     |  20 ++
+ .../res/values-zh-rHK/lineage_strings.xml     |  20 ++
+ .../res/values-zh-rTW/lineage_strings.xml     |  20 ++
+ .../SystemUI/res/values/lineage_strings.xml   |  20 ++
+ .../KeyguardIndicationController.java         |  63 ++++++-
+ .../statusbar/phone/FaceUnlockImageView.kt    | 102 ++++++++++
+ 11 files changed, 467 insertions(+), 5 deletions(-)
+ create mode 100644 packages/SystemUI/res/drawable/face_not_verified.xml
+ create mode 100644 packages/SystemUI/res/drawable/face_scanning.xml
+ create mode 100644 packages/SystemUI/res/drawable/face_success.xml
+ create mode 100644 packages/SystemUI/res/values-de/derp_strings.xml
+ create mode 100644 packages/SystemUI/res/values-zh-rCN/lineage_strings.xml
+ create mode 100644 packages/SystemUI/res/values-zh-rHK/lineage_strings.xml
+ create mode 100644 packages/SystemUI/res/values-zh-rTW/lineage_strings.xml
+ create mode 100644 packages/SystemUI/res/values/lineage_strings.xml
+ create mode 100644 packages/SystemUI/src/com/android/systemui/statusbar/phone/FaceUnlockImageView.kt
+
+diff --git a/packages/SystemUI/res/drawable/face_not_verified.xml b/packages/SystemUI/res/drawable/face_not_verified.xml
+new file mode 100644
+index 000000000000..03b0566d6f04
+--- /dev/null
++++ b/packages/SystemUI/res/drawable/face_not_verified.xml
+@@ -0,0 +1,16 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24"
++    android:tint="?attr/colorControlNormal">
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M15.5,9.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"/>
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M8.5,9.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"/>
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M12,14c-2.33,0 -4.32,1.45 -5.12,3.5h1.67c0.69,-1.19 1.97,-2 3.45,-2s2.75,0.81 3.45,2h1.67c-0.8,-2.05 -2.79,-3.5 -5.12,-3.5zM11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM12,20c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8z"/>
++</vector>
+diff --git a/packages/SystemUI/res/drawable/face_scanning.xml b/packages/SystemUI/res/drawable/face_scanning.xml
+new file mode 100644
+index 000000000000..27de6c80ef20
+--- /dev/null
++++ b/packages/SystemUI/res/drawable/face_scanning.xml
+@@ -0,0 +1,10 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24"
++    android:tint="?attr/colorControlNormal">
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M10.25,13c0,0.69 -0.56,1.25 -1.25,1.25S7.75,13.69 7.75,13s0.56,-1.25 1.25,-1.25 1.25,0.56 1.25,1.25zM15,11.75c-0.69,0 -1.25,0.56 -1.25,1.25s0.56,1.25 1.25,1.25 1.25,-0.56 1.25,-1.25 -0.56,-1.25 -1.25,-1.25zM22,12c0,5.52 -4.48,10 -10,10S2,17.52 2,12 6.48,2 12,2s10,4.48 10,10zM10.66,4.12C12.06,6.44 14.6,8 17.5,8c0.46,0 0.91,-0.05 1.34,-0.12C17.44,5.56 14.9,4 12,4c-0.46,0 -0.91,0.05 -1.34,0.12zM4.42,9.47c1.71,-0.97 3.03,-2.55 3.66,-4.44C6.37,6 5.05,7.58 4.42,9.47zM20,12c0,-0.78 -0.12,-1.53 -0.33,-2.24 -0.7,0.15 -1.42,0.24 -2.17,0.24 -3.13,0 -5.92,-1.44 -7.76,-3.69C8.69,8.87 6.6,10.88 4,11.86c0.01,0.04 0,0.09 0,0.14 0,4.41 3.59,8 8,8s8,-3.59 8,-8z"/>
++</vector>
+diff --git a/packages/SystemUI/res/drawable/face_success.xml b/packages/SystemUI/res/drawable/face_success.xml
+new file mode 100644
+index 000000000000..d63dacb1512e
+--- /dev/null
++++ b/packages/SystemUI/res/drawable/face_success.xml
+@@ -0,0 +1,16 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24"
++    android:tint="?attr/colorControlNormal">
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M15.5,9.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"/>
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M8.5,9.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"/>
++  <path
++      android:fillColor="@android:color/white"
++      android:pathData="M12,16c-1.48,0 -2.75,-0.81 -3.45,-2L6.88,14c0.8,2.05 2.79,3.5 5.12,3.5s4.32,-1.45 5.12,-3.5h-1.67c-0.69,1.19 -1.97,2 -3.45,2zM11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM12,20c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8z"/>
++</vector>
+diff --git a/packages/SystemUI/res/layout/keyguard_bottom_area.xml b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
+index 66c57fc2a9ac..b4636aa31df2 100644
+--- a/packages/SystemUI/res/layout/keyguard_bottom_area.xml
++++ b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
+@@ -30,6 +30,17 @@
+         android:layout_gravity="bottom|center_horizontal"
+         android:orientation="vertical">
+ 
++        <com.android.systemui.statusbar.phone.FaceUnlockImageView
++            android:id="@+id/face_unlock_icon"
++            android:layout_height="@dimen/keyguard_affordance_fixed_height"
++            android:layout_width="@dimen/keyguard_affordance_fixed_width"
++            android:layout_marginBottom="@dimen/keyguard_affordance_vertical_offset"
++            android:padding="@dimen/keyguard_affordance_fixed_padding"
++            android:layout_gravity="center"
++            android:scaleType="fitCenter"
++            android:tint="#FFFFFF"
++            android:visibility="gone" />
++            
+         <com.android.systemui.statusbar.phone.KeyguardIndicationTextView
+             android:id="@id/keyguard_indication_text"
+             android:layout_width="match_parent"
+diff --git a/packages/SystemUI/res/values-de/derp_strings.xml b/packages/SystemUI/res/values-de/derp_strings.xml
+new file mode 100644
+index 000000000000..27973fc3caba
+--- /dev/null
++++ b/packages/SystemUI/res/values-de/derp_strings.xml
+@@ -0,0 +1,174 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2023 DerpFest
++     SPDX-License-Identifier: Apache-2.0
++-->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++
++    <!-- Status bar - icons -->
++    <string name="status_bar_icons_title">Statusleistensymbole</string>
++
++    <!-- Custom QS tiles -->
++    <!-- Ambient display QS tile -->
++    <string name="quick_settings_ambient_display_label">Ambient display</string>
++    <string name="accessibility_quick_settings_ambient_display_off">Ambient display off.</string>
++    <string name="accessibility_quick_settings_ambient_display_on">Ambient display on.</string>
++
++    <!-- AOD QS tile -->
++    <string name="quick_settings_aod_label">AOD</string>
++    <string name="quick_settings_aod_on_charge_label">AOD beim Laden</string>
++    <string name="quick_settings_aod_off_label">AOD aus</string>
++
++    <!-- Caffeine QS tile -->
++    <string name="quick_settings_caffeine_label">Caffeine</string>
++    <string name="accessibility_quick_settings_caffeine_off">Caffeine off.</string>
++    <string name="accessibility_quick_settings_caffeine_on">Caffeine on.</string>
++
++    <!-- Compass QS Tile -->
++    <string name="quick_settings_compass_label">Kompass</string>
++    <string name="quick_settings_compass_value"><xliff:g id="Grad">%1$.0f</xliff:g>\u00b0 <xliff:g id="Richtung">%2$s</xliff:g></string>
++    <string name="quick_settings_compass_init">Vorbereitung läuft \u2026</string>
++    <string name="quick_settings_compass_N">N</string>
++    <string name="quick_settings_compass_NE">NO</string>
++    <string name="quick_settings_compass_E">O</string>
++    <string name="quick_settings_compass_SE">SO</string>
++    <string name="quick_settings_compass_S">S</string>
++    <string name="quick_settings_compass_SW">SW</string>
++    <string name="quick_settings_compass_W">W</string>
++    <string name="quick_settings_compass_NW">NW</string>
++
++    <!-- DataSwitch Tile -->
++    <string name="qs_data_switch_label">SIM-Karte für mobile Daten wechseln</string>
++    <string name="qs_data_switch_toast_0">Currently no SIM card is inserted</string>
++    <string name="qs_data_switch_toast_1">Currently only one SIM card is inserted</string>
++    <string name="qs_data_switch_text_1">SIM 1</string>
++    <string name="qs_data_switch_text_2">SIM 2</string>
++    <string name="qs_data_switch_changed_1">Switched data card to SIM 1.</string>
++    <string name="qs_data_switch_changed_2">Switched data card to SIM 2.</string>
++
++    <!-- Heads up QS tile -->
++    <string name="quick_settings_heads_up_label">Pop-up</string>
++    <string name="accessibility_quick_settings_heads_up_off">Pop-up aus.</string>
++    <string name="accessibility_quick_settings_heads_up_on">Pop-up an.</string>
++
++    <!-- PowerShare QS tile -->
++    <string name="quick_settings_powershare_label">Battery Share</string>
++    <string name="quick_settings_powershare_enabled_label">Battery Share ist aktiviert</string>
++
++    <!-- Reader mode QS tile -->
++    <string name="quick_settings_reading_mode">Lesemodus</string>
++    <string name="accessibility_quick_settings_reading_mode_on">Lesemodus an.</string>
++    <string name="accessibility_quick_settings_reading_mode_off">Lesemodus aus.</string>
++
++    <!-- Sound QS Tile -->
++    <string name="quick_settings_sound_label">Ton</string>
++    <string name="quick_settings_sound_ring">Klingeln</string>
++    <string name="quick_settings_sound_vibrate">Vibrieren</string>
++    <string name="quick_settings_sound_silent">Still</string>
++
++    <!-- Sync QS tile -->
++    <string name="quick_settings_sync_label">Synchronisation</string>
++    <string name="accessibility_quick_settings_sync_off">Synchronisierung aus.</string>
++    <string name="accessibility_quick_settings_sync_on">Synchronisierung an.</string>
++
++    <!-- USB tethering QS tile -->
++    <string name="quick_settings_usb_tether_label">USB-Tethering</string>
++
++    <!-- VPN QS tile -->
++    <string name="quick_settings_vpn_label">VPN</string>
++    <string name="quick_settings_vpn_connect_dialog_title">Wird verbunden\u2026</string>
++    <string name="vpn_credentials_hint">Bitte Zugangsdaten eingeben, um sich mit <xliff:g id="name">%s</xliff:g> zu verbinden</string>
++    <string name="vpn_credentials_username">Benutzername</string>
++    <string name="vpn_credentials_password">Passwort</string>
++    <string name="vpn_credentials_dialog_connect">Verbinden</string>
++
++    <!-- VPN tethering QS tile -->
++    <string name="vpn_tethering_label">VPN-Tethering</string>
++    <string name="vpn_tethering_changed_off">VPN-Tethering aus.</string>
++    <string name="vpn_tethering_changed_on">VPN-Tethering an.</string>
++
++    <!-- Name of the clock in status bar [CHAR LIMIT=30] -->
++    <string name="clock">Uhr</string>
++
++    <!-- Label for area where tiles can be added to the qs panel -->
++    <string name="drag_or_tap_to_add_tiles">Halten &amp; ziehen oder tippen zum Hinzufügen</string>
++    <!-- Label for the area where tiles can be dragged in to remove -->
++    <string name="drag_or_tap_to_remove_tiles">Halten &amp; ziehen oder tippen zum Entfernen</string>
++
++    <!-- Label for UI element which allows deleting the screenshot [CHAR LIMIT=30] -->
++    <string name="screenshot_delete_label">Löschen</string>
++
++    <!-- Content description indicating that tapping the element will allow deleting the screenshot [CHAR LIMIT=NONE] -->
++    <string name="screenshot_delete_description">Screenshot löschen</string>
++
++    <!-- Advanced restart menu -->
++    <string name="global_action_restart_more">Neustarten\u2026</string>
++    <string name="global_action_restart_system">System</string>
++    <string name="global_action_restart_recovery">Recovery</string>
++    <string name="global_action_restart_bootloader">Bootloader</string>
++    <string name="global_action_restart_download">Download-Modus</string>
++    <string name="global_action_restart_fastboot">Fastbootd</string>
++    <string name="global_action_restart_progress">Neustarten\u2026</string>
++    <string name="global_action_restart_recovery_progress">In Recovery-Modus neustarten\u2026</string>
++    <string name="global_action_restart_bootloader_progress">In Bootloader-Modus neustarten\u2026</string>
++    <string name="global_action_restart_download_progress">In Download-Modus neustarten\u2026</string>
++    <string name="global_action_restart_fastboot_progress">Neustart in den Fastbootd-Modus\u2026</string>
++
++    <!-- Label for current user in power menu options dialog -->
++    <string name="global_action_current_user">Aktuell</string>
++    <string name="global_action_users">Benutzer</string>
++    <string name="global_action_panic">Panikauslöser</string>
++    <string name="global_action_restart_systemui">System-UI</string>
++
++    <!-- Navigation bar dpad -->
++    <string name="accessibility_dpad_left">Cursor links</string>
++    <string name="accessibility_dpad_right">Cursor rechts</string>
++
++     <!-- Data usage info in QS footer -->
++    <string name="usage_data">heute verbraucht</string>
++    <string name="usage_data_default_suffix">Mobildaten</string>
++    <string name="usage_wifi_default_suffix">WLAN</string>
++
++    <!-- QuickSettings: InternetDialog: Summary for how many devices are connected to the hotspot [CHAR LIMIT=NONE] -->
++     <string name="quick_settings_internet_hotspot_summary_num_devices">{count, plural,
++        =1 {# Gerät verbunden}
++        other {# Geräte verbunden}
++    }</string>
++
++    <!-- Screen record delete action -->
++    <!-- Label for notification action to delete a screen recording file [CHAR LIMIT=35] -->
++    <string name="screenrecord_delete_label">Löschen</string>
++    <!-- A toast message shown after successfully deleting a screen recording [CHAR LIMIT=NONE] -->
++    <string name="screenrecord_delete_description">Bildschirmaufzeichnung gelöscht</string>
++
++    <!-- Screen record -->
++    <string name="screenrecord_stopdot_label">Stopppunkt anzeigen</string>
++    <string name="screenrecord_stopdot_summary">Gedrückthalten zum Verschieben</string>
++    <string name="screenrecord_lowquality_label">Geringere Qualität</string>
++    <string name="screenrecord_lowquality_summary">Zum Verringern der Dateigröße</string>
++    <string name="screenrecord_longer_timeout_switch_label">Max. Dateigröße erhöhen</string>
++    <string name="screenrecord_longer_timeout_switch_summary">Größe der Aufnahme auf 15 GB begrenzen</string>
++    <string name="screenrecord_skip_time_label">Timer überspringen</string>
++    <string name="screenrecord_skip_time_summary">Dreisekündige Wartezeit deaktivieren</string>
++    <string name="screenrecord_hevc_switch_label">HEVC aktivieren</string>
++    <string name="screenrecord_hevc_switch_summary">HEVC als Videocodec verwenden (effizienter)</string>
++
++    <!-- Bluetooth dialog -->
++    <string name="turn_on_bluetooth">Bluetooth einschalten</string>
++    <string name="bluetooth_is_off">Bluetooth ist deaktiviert</string>
++    <string name="tap_a_device_to_connect">Gerät zum Verbinden / Trennen antippen</string>
++
++    <!-- Screenshot Tile -->
++    <string name="screenshot_long_press">Gedrückt halten - ausgewählter Bereich</string>
++
++    <!-- SoundSearch Tile -->
++    <string name="quick_settings_sound_search">Sound Search</string>
++    <string name="quick_settings_sound_search_no_app">Das funktioniert leider nur, wenn eine Musikerkennungs‐App installiert ist.</string>
++
++    <!-- Language toggle tile -->
++    <string name="quick_settings_locale_label">Sprache</string>
++    <string name="quick_settings_locale_more_locales_toast">Bitte mehr als eine Sprache einrichten</string>
++
++    <!-- Face Unlock -->
++    <string name="face_unlock_recognizing">Gesichtserkennung …</string>
++</resources>
+diff --git a/packages/SystemUI/res/values-zh-rCN/lineage_strings.xml b/packages/SystemUI/res/values-zh-rCN/lineage_strings.xml
+new file mode 100644
+index 000000000000..195b531aacd5
+--- /dev/null
++++ b/packages/SystemUI/res/values-zh-rCN/lineage_strings.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2018-2022 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources>
++    <!-- Face Unlock -->
++    <string name="face_unlock_recognizing">人脸识别中</string>
++</resources>
+diff --git a/packages/SystemUI/res/values-zh-rHK/lineage_strings.xml b/packages/SystemUI/res/values-zh-rHK/lineage_strings.xml
+new file mode 100644
+index 000000000000..69ddfa7f1f83
+--- /dev/null
++++ b/packages/SystemUI/res/values-zh-rHK/lineage_strings.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2018-2022 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources>
++    <!-- Face Unlock -->
++    <string name="face_unlock_recognizing">人臉識別中</string>
++</resources>
+diff --git a/packages/SystemUI/res/values-zh-rTW/lineage_strings.xml b/packages/SystemUI/res/values-zh-rTW/lineage_strings.xml
+new file mode 100644
+index 000000000000..69ddfa7f1f83
+--- /dev/null
++++ b/packages/SystemUI/res/values-zh-rTW/lineage_strings.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2018-2022 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources>
++    <!-- Face Unlock -->
++    <string name="face_unlock_recognizing">人臉識別中</string>
++</resources>
+diff --git a/packages/SystemUI/res/values/lineage_strings.xml b/packages/SystemUI/res/values/lineage_strings.xml
+new file mode 100644
+index 000000000000..a7aa93dd34f9
+--- /dev/null
++++ b/packages/SystemUI/res/values/lineage_strings.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2018-2022 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources>
++    <!-- Face Unlock -->
++    <string name="face_unlock_recognizing">Recognizing face...</string>
++</resources>
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
+index feb02586a820..f41f9b11ffc1 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
+@@ -104,6 +104,7 @@ import com.android.systemui.log.core.LogLevel;
+ import com.android.systemui.plugins.FalsingManager;
+ import com.android.systemui.plugins.statusbar.StatusBarStateController;
+ import com.android.systemui.settings.UserTracker;
++import com.android.systemui.statusbar.phone.FaceUnlockImageView;
+ import com.android.systemui.statusbar.phone.KeyguardBypassController;
+ import com.android.systemui.statusbar.phone.KeyguardIndicationTextView;
+ import com.android.systemui.statusbar.phone.StatusBarKeyguardViewManager;
+@@ -141,6 +142,8 @@ public class KeyguardIndicationController {
+ 
+     private static final int MSG_SHOW_ACTION_TO_UNLOCK = 1;
+     private static final int MSG_RESET_ERROR_MESSAGE_ON_SCREEN_ON = 2;
++    private static final int MSG_SHOW_RECOGNIZING_FACE = 3;
++    private static final int MSG_HIDE_RECOGNIZING_FACE = 4;
+     private static final long TRANSIENT_BIOMETRIC_ERROR_TIMEOUT = 1300;
+     public static final long DEFAULT_HIDE_DELAY_MS =
+             3500 + KeyguardIndicationTextView.Y_IN_DURATION;
+@@ -155,6 +158,7 @@ public class KeyguardIndicationController {
+     private final UserTracker mUserTracker;
+     private final BouncerMessageInteractor mBouncerMessageInteractor;
+     private ViewGroup mIndicationArea;
++    private FaceUnlockImageView mFaceIconView;
+     private KeyguardIndicationTextView mTopIndicationView;
+     private KeyguardIndicationTextView mLockScreenIndicationView;
+     private final IBatteryStats mBatteryInfo;
+@@ -205,6 +209,8 @@ public class KeyguardIndicationController {
+     private final Set<Integer> mCoExFaceAcquisitionMsgIdsToShow;
+     private final FaceHelpMessageDeferral mFaceAcquiredMessageDeferral;
+     private boolean mInited;
++    
++    private boolean mFaceDetectionRunning;
+ 
+     private KeyguardUpdateMonitorCallback mUpdateMonitorCallback;
+ 
+@@ -234,6 +240,15 @@ public class KeyguardIndicationController {
+                 mBiometricErrorMessageToShowOnScreenOn = null;
+             }
+         }
++        
++        @Override
++        public void onScreenTurnedOff() {
++            if (mFaceDetectionRunning) {
++                mFaceDetectionRunning = false;
++                mBiometricErrorMessageToShowOnScreenOn = null;
++                hideFaceUnlockRecognizingMessage();
++            }
++        }
+     };
+     private boolean mFaceLockedOutThisAuthSession;
+ 
+@@ -321,6 +336,11 @@ public class KeyguardIndicationController {
+                     showActionToUnlock();
+                 } else if (msg.what == MSG_RESET_ERROR_MESSAGE_ON_SCREEN_ON) {
+                     mBiometricErrorMessageToShowOnScreenOn = null;
++                } else if (msg.what == MSG_SHOW_RECOGNIZING_FACE) {
++                    mBiometricErrorMessageToShowOnScreenOn = null;
++                    showFaceUnlockRecognizingMessage();
++                } else if (msg.what == MSG_HIDE_RECOGNIZING_FACE) {
++                    hideFaceUnlockRecognizingMessage();
+                 }
+             }
+         };
+@@ -357,6 +377,7 @@ public class KeyguardIndicationController {
+ 
+     public void setIndicationArea(ViewGroup indicationArea) {
+         mIndicationArea = indicationArea;
++        mFaceIconView = indicationArea.findViewById(R.id.face_unlock_icon);
+         mTopIndicationView = indicationArea.findViewById(R.id.keyguard_indication_text);
+         mLockScreenIndicationView = indicationArea.findViewById(
+             R.id.keyguard_indication_text_bottom);
+@@ -852,6 +873,12 @@ public class KeyguardIndicationController {
+                 && TextUtils.equals(biometricMessageFollowUp, mBiometricMessageFollowUp)) {
+             return;
+         }
++        
++        if (TextUtils.equals(biometricMessage, mContext.getString(R.string.keyguard_face_successful_unlock))) {
++            mFaceIconView.setState(FaceUnlockImageView.State.SUCCESS);
++        } else if (TextUtils.equals(biometricMessage, mContext.getString(R.string.keyguard_face_failed))) {
++            mFaceIconView.setState(FaceUnlockImageView.State.NOT_VERIFIED);
++        }
+ 
+         mBiometricMessage = biometricMessage;
+         mBiometricMessageFollowUp = biometricMessageFollowUp;
+@@ -876,6 +903,25 @@ public class KeyguardIndicationController {
+         }
+     }
+ 
++    private void showFaceUnlockRecognizingMessage() {
++        mFaceIconView.setVisibility(View.VISIBLE);
++        mFaceIconView.setState(FaceUnlockImageView.State.SCANNING);
++        showBiometricMessage(mContext.getResources().getString(
++                                    R.string.face_unlock_recognizing));
++    }
++
++    private void hideFaceUnlockRecognizingMessage() {
++        if (mFaceIconView != null) {
++            mFaceIconView.setVisibility(View.GONE);
++        }
++        String faceUnlockMessage = mContext.getResources().getString(
++            R.string.face_unlock_recognizing);
++        if (mBiometricMessage != null && mBiometricMessage == faceUnlockMessage) {
++            mBiometricMessage = null;
++            hideBiometricMessage();
++        }
++    }
++
+     /**
+      * Hides transient indication.
+      */
+@@ -1332,11 +1378,17 @@ public class KeyguardIndicationController {
+         @Override
+         public void onBiometricRunningStateChanged(boolean running,
+                 BiometricSourceType biometricSourceType) {
+-            if (running && biometricSourceType == FACE) {
+-                // Let's hide any previous messages when authentication starts, otherwise
+-                // multiple auth attempts would overlap.
+-                hideBiometricMessage();
+-                mBiometricErrorMessageToShowOnScreenOn = null;
++            if (biometricSourceType == BiometricSourceType.FACE) {
++                mFaceDetectionRunning = running;
++                if (running) {
++                    mHandler.removeMessages(MSG_HIDE_RECOGNIZING_FACE);
++                    mHandler.removeMessages(MSG_SHOW_RECOGNIZING_FACE);
++                    mHandler.sendEmptyMessageDelayed(MSG_SHOW_RECOGNIZING_FACE, 100);
++                } else {
++                    mHandler.removeMessages(MSG_SHOW_RECOGNIZING_FACE);
++                    mHandler.removeMessages(MSG_HIDE_RECOGNIZING_FACE);
++                    mHandler.sendEmptyMessageDelayed(MSG_HIDE_RECOGNIZING_FACE, 100);
++                }
+             }
+         }
+ 
+@@ -1493,6 +1545,7 @@ public class KeyguardIndicationController {
+ 
+             if (mDozing) {
+                 hideBiometricMessage();
++                hideFaceUnlockRecognizingMessage();
+             }
+             updateDeviceEntryIndication(false);
+         }
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/FaceUnlockImageView.kt b/packages/SystemUI/src/com/android/systemui/statusbar/phone/FaceUnlockImageView.kt
+new file mode 100644
+index 000000000000..5b6c7beff8dc
+--- /dev/null
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/FaceUnlockImageView.kt
+@@ -0,0 +1,102 @@
++/*
++ * Copyright (C) 2023 the risingOS Android Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package com.android.systemui.statusbar.phone
++
++import android.animation.ObjectAnimator
++import android.animation.AnimatorSet
++import android.animation.PropertyValuesHolder
++import android.content.Context
++import android.util.AttributeSet
++import android.widget.ImageView
++import android.view.animation.LinearInterpolator
++import android.view.animation.AccelerateDecelerateInterpolator
++import android.view.animation.DecelerateInterpolator
++
++import com.android.systemui.R
++
++class FaceUnlockImageView @JvmOverloads constructor(
++    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
++) : ImageView(context, attrs, defStyleAttr) {
++
++    enum class State {
++        SCANNING, NOT_VERIFIED, SUCCESS
++    }
++
++    private var currentState: State = State.SCANNING
++    private val scanningAnimation: ObjectAnimator = createScanningAnimation()
++    private val successShakeAnimation: AnimatorSet = createShakeAnimation(5f)
++    private val failureShakeAnimation: AnimatorSet = createShakeAnimation(10f)
++
++    init {
++        updateDrawable(animate = false)
++    }
++
++    fun setState(state: State) {
++        if (currentState != state) {
++            currentState = state
++            updateDrawable(animate = true)
++            handleAnimationForState(state)
++        }
++    }
++
++    private fun updateDrawable(animate: Boolean) {
++        setImageResource(when (currentState) {
++            State.SCANNING -> R.drawable.face_scanning
++            State.NOT_VERIFIED -> R.drawable.face_not_verified
++            State.SUCCESS -> R.drawable.face_success
++        })
++    }
++
++    private fun createScanningAnimation(): ObjectAnimator {
++        val scaleX = PropertyValuesHolder.ofFloat("scaleX", 1f, 1.2f, 1f)
++        val scaleY = PropertyValuesHolder.ofFloat("scaleY", 1f, 1.2f, 1f)
++        val scanningAnimator = ObjectAnimator.ofPropertyValuesHolder(this, scaleX, scaleY)
++        scanningAnimator.duration = 1000
++        scanningAnimator.repeatCount = ObjectAnimator.INFINITE
++        scanningAnimator.interpolator = LinearInterpolator()
++        return scanningAnimator
++    }
++
++    private fun createShakeAnimation(amplitude: Float): AnimatorSet {
++        val animatorSet = AnimatorSet()
++        val translationX = PropertyValuesHolder.ofFloat("translationX", 0f, amplitude, -amplitude, amplitude, -amplitude, 0f)
++        val shakeAnimator = ObjectAnimator.ofPropertyValuesHolder(this, translationX)
++        shakeAnimator.duration = 500
++        shakeAnimator.interpolator = AccelerateDecelerateInterpolator()
++        animatorSet.play(shakeAnimator)
++        return animatorSet
++    }
++
++    private fun handleAnimationForState(state: State) {
++        when (state) {
++            State.SCANNING -> {
++                failureShakeAnimation.cancel()
++                successShakeAnimation.cancel()
++                scanningAnimation.start()
++            }
++            State.NOT_VERIFIED -> {
++                scanningAnimation.cancel()
++                successShakeAnimation.cancel()
++                failureShakeAnimation.start()
++            }
++            State.SUCCESS -> {
++                scanningAnimation.cancel()
++                failureShakeAnimation.cancel()
++                successShakeAnimation.start()
++            }
++        }
++    }
++}
+-- 
+2.25.1
+
