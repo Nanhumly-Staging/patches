@@ -1,0 +1,36 @@
+From 80afa492e087a6d94f98c21fe01a2ea2c0914845 Mon Sep 17 00:00:00 2001
+From: Danny Lin <danny@kdrag0n.dev>
+Date: Mon, 14 Mar 2022 19:51:20 +0200
+Subject: [PATCH 5/8] SystemUI: Enable production-ready feature flags -
+ Conversations: enabled by default on Pixel - Charging ripple: enabled by
+ default on Pixel Taken from
+ https://github.com/ProtonAOSP/android_vendor_proton/commit/a32d8c4c9e731e609b16b37da191669f5c607aad
+
+---
+ packages/SystemUI/res/values/flags.xml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/packages/SystemUI/res/values/flags.xml b/packages/SystemUI/res/values/flags.xml
+index 763930db1d55..37319cd9b3c3 100644
+--- a/packages/SystemUI/res/values/flags.xml
++++ b/packages/SystemUI/res/values/flags.xml
+@@ -21,14 +21,14 @@
+     <bool name="flag_monet">true</bool>
+ 
+     <!-- People Tile flag -->
+-    <bool name="flag_conversations">false</bool>
++    <bool name="flag_conversations">true</bool>
+ 
+     <!-- Whether the multi-user icon on the lockscreen opens the QS user detail. If false, clicking
+          the multi-user icon will display a list of users directly on the lockscreen. The multi-user
+          icon is only shown if config_keyguardUserSwitcher=false in the frameworks config. -->
+     <bool name="flag_lockscreen_qs_user_detail_shortcut">false</bool>
+ 
+-    <bool name="flag_charging_ripple">false</bool>
++    <bool name="flag_charging_ripple">true</bool>
+ 
+     <!--  Whether the user switcher chip shows in the status bar. When true, the multi user
+       avatar will no longer show on the lockscreen -->
+-- 
+2.34.1
+
