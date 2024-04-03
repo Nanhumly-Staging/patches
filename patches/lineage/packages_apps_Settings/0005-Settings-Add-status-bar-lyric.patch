@@ -1,4 +1,4 @@
-From ff77101bba3d3bc7a7150026f099082c7d27110d Mon Sep 17 00:00:00 2001
+From 4441966f17949d1776c3186de6a09700865ad17a Mon Sep 17 00:00:00 2001
 From: Kujou Yuko <i@779.moe>
 Date: Thu, 4 Aug 2022 01:35:52 +0000
 Subject: [PATCH] Settings: Add status bar lyric
@@ -32,14 +32,14 @@ index 87ff796748f..f786d103e9a 100644
 +    <string name="status_bar_show_lyric_title">启用状态栏歌词</string>
  </resources>
 diff --git a/res/values-zh-rHK/extra_strings.xml b/res/values-zh-rHK/extra_strings.xml
-index 058a628324d..bddd2f54daf 100644
+index 058a628324d..6f86dac2c43 100644
 --- a/res/values-zh-rHK/extra_strings.xml
 +++ b/res/values-zh-rHK/extra_strings.xml
 @@ -19,4 +19,9 @@
      <string name="app_volume">應用程式音量</string>
      <string name="app_volume_title">個別應用控制音量</string>
      <string name="app_volume_summary">允許為每個應用設定不同的音量</string>
-+    
++
 +    <!-- Statusbar lyric -->
 +    <string name="status_bar_lyric_title">狀態欄歌詞</string>
 +    <string name="status_bar_lyric_summary">顯示歌詞在狀態欄（需要 App 有支援此功能）</string>
@@ -60,24 +60,24 @@ index 058a628324d..6f86dac2c43 100644
 +    <string name="status_bar_show_lyric_title">啟用狀態欄歌詞</string>
  </resources>
 diff --git a/res/values/extra_strings.xml b/res/values/extra_strings.xml
-index f5b37b101ac..77a9237feeb 100644
+index f5b37b101ac..2535a5cd212 100644
 --- a/res/values/extra_strings.xml
 +++ b/res/values/extra_strings.xml
 @@ -19,4 +19,9 @@
      <string name="app_volume">App volume</string>
      <string name="app_volume_title">Per-app volume control</string>
      <string name="app_volume_summary">Allow to set different volume levels for each app</string>
-+    
++
 +    <!-- Statusbar lyric -->
 +    <string name="status_bar_lyric_title">Status bar lyric</string>
 +    <string name="status_bar_lyric_summary">Show lyric in status bar (need app support)</string>
 +    <string name="status_bar_show_lyric_title">Enable status bar lyric</string>
  </resources>
 diff --git a/res/xml/display_settings.xml b/res/xml/display_settings.xml
-index 7a74c2a7fb2..49dddbbd233 100644
+index 98576f78a4c..8909b1edb00 100644
 --- a/res/xml/display_settings.xml
 +++ b/res/xml/display_settings.xml
-@@ -221,6 +221,12 @@
+@@ -233,6 +233,12 @@
              android:defaultValue="false"
              settings:requiresFeature="lineagehardware:FEATURE_HIGH_TOUCH_SENSITIVITY" />
  
@@ -124,7 +124,7 @@ index 00000000000..5c5e5fde24b
 +</PreferenceScreen>
 diff --git a/src/com/android/settings/statusbar/StatusbarLyricSettings.java b/src/com/android/settings/statusbar/StatusbarLyricSettings.java
 new file mode 100644
-index 00000000000..e2175c215f8
+index 00000000000..71fa603e218
 --- /dev/null
 +++ b/src/com/android/settings/statusbar/StatusbarLyricSettings.java
 @@ -0,0 +1,41 @@

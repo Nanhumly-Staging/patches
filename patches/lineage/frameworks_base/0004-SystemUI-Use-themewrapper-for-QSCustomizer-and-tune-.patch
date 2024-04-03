@@ -13,7 +13,7 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
  2 files changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/packages/SystemUI/src/com/android/systemui/qs/customize/QSCustomizer.java b/packages/SystemUI/src/com/android/systemui/qs/customize/QSCustomizer.java
-index 7ef47ab2293a..969bce57699b 100644
+index 1af2306ad77d..705d6bb940d6 100644
 --- a/packages/SystemUI/src/com/android/systemui/qs/customize/QSCustomizer.java
 +++ b/packages/SystemUI/src/com/android/systemui/qs/customize/QSCustomizer.java
 @@ -23,6 +23,7 @@ import android.content.res.Configuration;
@@ -44,18 +44,18 @@ index 7ef47ab2293a..969bce57699b 100644
          toolbar.getMenu().add(Menu.NONE, MENU_RESET, 0, com.android.internal.R.string.reset)
                  .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
 diff --git a/packages/SystemUI/src/com/android/systemui/qs/tileimpl/QSTileViewImpl.kt b/packages/SystemUI/src/com/android/systemui/qs/tileimpl/QSTileViewImpl.kt
-index 764ef681106b..4e59e8c98424 100644
+index 456520051f58..3a018c70a8ad 100644
 --- a/packages/SystemUI/src/com/android/systemui/qs/tileimpl/QSTileViewImpl.kt
 +++ b/packages/SystemUI/src/com/android/systemui/qs/tileimpl/QSTileViewImpl.kt
-@@ -95,7 +95,7 @@ open class QSTileViewImpl @JvmOverloads constructor(
+@@ -100,7 +100,7 @@ open class QSTileViewImpl @JvmOverloads constructor(
  
      private val colorActive = Utils.getColorAttrDefaultColor(context, R.attr.shadeActive)
      private val colorInactive = Utils.getColorAttrDefaultColor(context, R.attr.shadeInactive)
 -    private val colorUnavailable = Utils.getColorAttrDefaultColor(context, R.attr.shadeDisabled)
 +    private val colorUnavailable = Utils.applyAlpha(UNAVAILABLE_ALPHA, colorInactive)
  
-     private val colorLabelActive = Utils.getColorAttrDefaultColor(context, R.attr.onShadeActive)
-     private val colorLabelInactive = Utils.getColorAttrDefaultColor(context, R.attr.onShadeInactive)
+     private val overlayColorActive = Utils.applyAlpha(
+         /* alpha= */ 0.11f,
 -- 
 2.25.1
 

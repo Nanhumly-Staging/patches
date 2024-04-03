@@ -1,4 +1,4 @@
-From 4cb14ff8b391e77402109a41537a3728a0f45e81 Mon Sep 17 00:00:00 2001
+From 2faf2d14dc9581f40b97b9bb660b9a529324644f Mon Sep 17 00:00:00 2001
 From: cjybyjk <cjybyjk@zjnu.edu.cn>
 Date: Sat, 30 Jul 2022 22:13:54 +0800
 Subject: [PATCH 1/2] base: Reset props for status bar lyric [1/2]
@@ -8,24 +8,16 @@ Reset props to Meizu in some apps to use status bar lyric
 Signed-off-by: cjybyjk <cjybyjk@zjnu.edu.cn>
 Change-Id: Idd573836af184b95ab0275f81fcb7ae3057783b9
 ---
- core/java/android/app/Instrumentation.java    | 10 +++
+ core/java/android/app/Instrumentation.java    |  9 ++
  .../util/lineage/MeizuPropsUtils.java         | 84 +++++++++++++++++++
- 2 files changed, 94 insertions(+)
+ 2 files changed, 93 insertions(+)
  create mode 100644 core/java/com/android/internal/util/lineage/MeizuPropsUtils.java
 
 diff --git a/core/java/android/app/Instrumentation.java b/core/java/android/app/Instrumentation.java
-index 33a1c161cdc0..b8cb84e38854 100644
+index 3a1b37923831..c053e90f4061 100644
 --- a/core/java/android/app/Instrumentation.java
 +++ b/core/java/android/app/Instrumentation.java
-@@ -42,6 +42,7 @@ import android.os.Process;
- import android.os.RemoteException;
- import android.os.ServiceManager;
- import android.os.SystemClock;
-+import android.os.SystemProperties;
- import android.os.TestLooperManager;
- import android.os.UserHandle;
- import android.os.UserManager;
-@@ -68,6 +69,7 @@ import java.util.List;
+@@ -72,6 +72,7 @@ import java.util.StringJoiner;
  import java.util.concurrent.TimeoutException;
  
  import com.android.internal.util.lineage.PixelPropsUtils;
@@ -33,16 +25,16 @@ index 33a1c161cdc0..b8cb84e38854 100644
  
  /**
   * Base class for implementing application instrumentation code.  When running
-@@ -100,6 +102,8 @@ public class Instrumentation {
+@@ -104,6 +105,8 @@ public class Instrumentation {
  
      private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
  
 +    private static final String DISGUISE_PROPS_FOR_MUSIC_APP = "persist.sys.disguise_props_for_music_app";
 +
-     /**
-      * @hide
-      */
-@@ -1285,6 +1289,9 @@ public class Instrumentation {
+     // If set, will print the stack trace for activity starts within the process
+     static final boolean DEBUG_START_ACTIVITY = Build.IS_DEBUGGABLE &&
+             SystemProperties.getBoolean("persist.wm.debug.start_activity", false);
+@@ -1348,6 +1351,9 @@ public class Instrumentation {
          app.attach(context);
          String packageName = context.getPackageName();
          PixelPropsUtils.setProps(packageName);
@@ -52,7 +44,7 @@ index 33a1c161cdc0..b8cb84e38854 100644
          return app;
      }
      
-@@ -1304,6 +1311,9 @@ public class Instrumentation {
+@@ -1367,6 +1373,9 @@ public class Instrumentation {
          app.attach(context);
          String packageName = context.getPackageName();
          PixelPropsUtils.setProps(packageName);
@@ -64,7 +56,7 @@ index 33a1c161cdc0..b8cb84e38854 100644
  
 diff --git a/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java b/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java
 new file mode 100644
-index 000000000000..a4d2a6ad8c1f
+index 000000000000..a579b391dc4c
 --- /dev/null
 +++ b/core/java/com/android/internal/util/lineage/MeizuPropsUtils.java
 @@ -0,0 +1,84 @@

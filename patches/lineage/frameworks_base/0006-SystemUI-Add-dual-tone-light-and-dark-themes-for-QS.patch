@@ -80,10 +80,10 @@ index 1571fab66a5b..0683c20a4a4c 100644
          <item name="alertDialogTheme">@style/Theme.DeviceDefault.Dialog.Alert</item>
          <item name="forceDarkAllowed">false</item>
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/ScrimController.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/ScrimController.java
-index fe64f08558f5..842f3dd8f54c 100644
+index 5bfbdd9614cb..7f0c88ad0801 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/ScrimController.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/ScrimController.java
-@@ -215,6 +215,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
+@@ -219,6 +219,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
      private final StatusBarKeyguardViewManager mStatusBarKeyguardViewManager;
  
      private GradientColors mColors;
@@ -91,7 +91,7 @@ index fe64f08558f5..842f3dd8f54c 100644
      private boolean mNeedsDrawableColorUpdate;
  
      private float mAdditionalScrimBehindAlphaKeyguard = 0f;
-@@ -352,6 +353,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
+@@ -359,6 +360,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
          mKeyguardTransitionInteractor = keyguardTransitionInteractor;
          mWallpaperRepository = wallpaperRepository;
          mMainDispatcher = mainDispatcher;
@@ -99,7 +99,7 @@ index fe64f08558f5..842f3dd8f54c 100644
      }
  
      @Override
-@@ -1127,7 +1129,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
+@@ -1132,7 +1134,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                      && !mBlankScreen;
  
              mScrimInFront.setColors(mColors, animateScrimInFront);
@@ -108,18 +108,19 @@ index fe64f08558f5..842f3dd8f54c 100644
              mNotificationsScrim.setColors(mColors, animateScrimNotifications);
  
              dispatchBackScrimState(mScrimBehind.getViewAlpha());
-@@ -1492,7 +1494,10 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
+@@ -1497,8 +1499,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
          if (mScrimBehind == null) return;
          int background = Utils.getColorAttr(mScrimBehind.getContext(),
-                 android.R.attr.colorBackgroundFloating).getDefaultColor();
+                 com.android.internal.R.attr.materialColorSurfaceDim).getDefaultColor();
 +        int surfaceBackground = Utils.getColorAttr(mScrimBehind.getContext(),
 +                com.android.internal.R.attr.colorSurfaceHeader).getDefaultColor();
-         int accent = Utils.getColorAccent(mScrimBehind.getContext()).getDefaultColor();
+         int accent = Utils.getColorAttr(mScrimBehind.getContext(),
+                 com.android.internal.R.attr.materialColorPrimary).getDefaultColor();
 +
          mColors.setMainColor(background);
          mColors.setSecondaryColor(accent);
          final boolean isBackgroundLight = !ContrastColorUtil.isColorDark(background);
-@@ -1504,6 +1509,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
+@@ -1510,6 +1515,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
              state.setSurfaceColor(surface);
          }
  

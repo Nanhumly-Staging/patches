@@ -1,4 +1,4 @@
-From da6fbac4cd604de9570bfd19f0745241a73167a4 Mon Sep 17 00:00:00 2001
+From 44f23863aedc818b793b7bd3a7d9db59cb2c08df Mon Sep 17 00:00:00 2001
 From: someone5678 <someone5678@users.noreply.github.com>
 Date: Wed, 18 Oct 2023 21:23:42 +0900
 Subject: [PATCH 2/2] Settings: Make all user apps cloneable
@@ -11,8 +11,8 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
 ---
  .../AppStateClonedAppsBridge.java             |  5 ++--
  .../ClonedAppsPreferenceController.java       |  6 ++--
- .../android/settings/custom/utils/AppUtils.kt | 28 +++++++++++++++++++
- 3 files changed, 34 insertions(+), 5 deletions(-)
+ .../android/settings/custom/utils/AppUtils.kt | 30 +++++++++++++++++++
+ 3 files changed, 36 insertions(+), 5 deletions(-)
  create mode 100644 src/com/android/settings/custom/utils/AppUtils.kt
 
 diff --git a/src/com/android/settings/applications/AppStateClonedAppsBridge.java b/src/com/android/settings/applications/AppStateClonedAppsBridge.java
@@ -76,10 +76,10 @@ index d134ceccd88..38f6dcc80f0 100644
                          .map(x -> x.packageName).toList();
 diff --git a/src/com/android/settings/custom/utils/AppUtils.kt b/src/com/android/settings/custom/utils/AppUtils.kt
 new file mode 100644
-index 00000000000..e08130feac7
+index 00000000000..353b16f9fdc
 --- /dev/null
 +++ b/src/com/android/settings/custom/utils/AppUtils.kt
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,30 @@
 +package com.android.settings.custom.utils
 +
 +import android.content.Context
@@ -92,12 +92,14 @@ index 00000000000..e08130feac7
 +            context.getPackageManager().getInstalledPackagesAsUser(/* flags*/ 0, UserHandle.myUserId())
 +
 +        var filteredList: List<PackageInfo> = packageList.filter {
-+                context.getResources().getStringArray(
-+                    com.android.internal.R.array.cloneable_apps)
-+                        .asList().contains(it.applicationInfo.packageName)
-+                || (!it.applicationInfo.isSystemApp()
-+                    && !it.applicationInfo.isResourceOverlay())
-+            }
++            val packageName = it.applicationInfo?.packageName
++            val isSystemApp = it.applicationInfo?.isSystemApp()
++            val isResourceOverlay = it.applicationInfo?.isResourceOverlay()
++            
++            val cloneableApps = context.resources.getStringArray(com.android.internal.R.array.cloneable_apps)?.toList()
++            
++            cloneableApps?.contains(packageName) == true || (isSystemApp == false && isResourceOverlay == false)
++        }
 +    
 +        return filteredList
 +    }

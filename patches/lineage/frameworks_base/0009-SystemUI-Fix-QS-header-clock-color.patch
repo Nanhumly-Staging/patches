@@ -15,10 +15,10 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
  1 file changed, 9 deletions(-)
 
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/policy/Clock.java b/packages/SystemUI/src/com/android/systemui/statusbar/policy/Clock.java
-index f55852674d9c..3e7fe4cea5fa 100644
+index cc7a82d49fab..94f65f2a9833 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/policy/Clock.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/policy/Clock.java
-@@ -42,7 +42,6 @@ import android.text.style.CharacterStyle;
+@@ -43,7 +43,6 @@ import android.text.style.CharacterStyle;
  import android.text.style.RelativeSizeSpan;
  import android.util.AttributeSet;
  import android.util.TypedValue;
@@ -26,15 +26,15 @@ index f55852674d9c..3e7fe4cea5fa 100644
  import android.view.Display;
  import android.view.View;
  import android.view.ViewGroup;
-@@ -50,7 +49,6 @@ import android.widget.TextView;
+@@ -51,7 +50,6 @@ import android.widget.TextView;
  
  import androidx.annotation.Nullable;
  
 -import com.android.settingslib.Utils;
  import com.android.systemui.Dependency;
  import com.android.systemui.FontSizeUtils;
- import com.android.systemui.R;
-@@ -430,13 +428,6 @@ public class Clock extends TextView implements
+ import com.android.systemui.res.R;
+@@ -433,13 +431,6 @@ public class Clock extends TextView implements
          setTextColor(mNonAdaptedColor);
      }
  

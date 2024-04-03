@@ -1,7 +1,7 @@
-From 8735962d31eb78fba833d1d11d6eeea1c3192249 Mon Sep 17 00:00:00 2001
+From 9856f4a188a2eda08994501d8db9fd49bae245a4 Mon Sep 17 00:00:00 2001
 From: cjybyjk <cjybyjk@zjnu.edu.cn>
 Date: Mon, 5 Sep 2022 05:03:38 +0000
-Subject: [PATCH] av: support per-app volume [1/3]
+Subject: [PATCH 1/2] av: support per-app volume [1/3]
 
 Signed-off-by: cjybyjk <cjybyjk@zjnu.edu.cn>
 Change-Id: Ib22a04d7b99706042b903a223d0b3900c0838fbd
@@ -14,18 +14,20 @@ Change-Id: Ib22a04d7b99706042b903a223d0b3900c0838fbd
  .../android/media/IAudioFlingerService.aidl   |  5 ++
  .../include/media/AudioSystem.h               |  5 ++
  .../include/media/IAudioFlinger.h             | 16 ++++
- services/audioflinger/AudioFlinger.cpp        | 68 ++++++++++++++-
+ services/audioflinger/AudioFlinger.cpp        | 65 +++++++++++++-
  services/audioflinger/AudioFlinger.h          |  8 ++
+ services/audioflinger/IAfThread.h             |  5 ++
+ services/audioflinger/IAfTrack.h              |  9 +-
  services/audioflinger/PlaybackTracks.h        | 13 ++-
  services/audioflinger/Threads.cpp             | 56 ++++++++++--
  services/audioflinger/Threads.h               |  4 +
  services/audioflinger/Tracks.cpp              | 24 ++++++
- 14 files changed, 367 insertions(+), 8 deletions(-)
+ 16 files changed, 377 insertions(+), 9 deletions(-)
  create mode 100644 aidl/android/media/AppVolumeData.aidl
  create mode 100644 include/media/AppVolume.h
 
 diff --git a/Android.bp b/Android.bp
-index 302e250a79..abfb791dc9 100644
+index 7a2bb9b73a..617261789e 100644
 --- a/Android.bp
 +++ b/Android.bp
 @@ -42,6 +42,7 @@ aidl_interface {
@@ -161,10 +163,10 @@ index 0000000000..5c12c11ae7
 +
 +#endif // APP_VOLUME_H
 diff --git a/media/libaudioclient/AudioSystem.cpp b/media/libaudioclient/AudioSystem.cpp
-index 7cec2e8879..9c3c1f49b6 100644
+index 5bfdd5f94d..5a920f57c9 100644
 --- a/media/libaudioclient/AudioSystem.cpp
 +++ b/media/libaudioclient/AudioSystem.cpp
-@@ -2592,6 +2592,27 @@ status_t AudioSystem::registerSoundTriggerCaptureStateListener(
+@@ -2617,6 +2617,27 @@ status_t AudioSystem::registerSoundTriggerCaptureStateListener(
      return NO_ERROR;
  }
  
@@ -193,10 +195,10 @@ index 7cec2e8879..9c3c1f49b6 100644
          const std::vector<media::AudioVibratorInfo>& vibratorInfos) {
      const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
 diff --git a/media/libaudioclient/IAudioFlinger.cpp b/media/libaudioclient/IAudioFlinger.cpp
-index 7caaaaf226..74df84a231 100644
+index 48f8992b6d..83fbfb87ae 100644
 --- a/media/libaudioclient/IAudioFlinger.cpp
 +++ b/media/libaudioclient/IAudioFlinger.cpp
-@@ -332,6 +332,28 @@ status_t AudioFlingerClientAdapter::getMasterBalance(float* balance) const{
+@@ -336,6 +336,28 @@ status_t AudioFlingerClientAdapter::getMasterBalance(float* balance) const{
      return statusTFromBinderStatus(mDelegate->getMasterBalance(balance));
  }
  
@@ -225,7 +227,7 @@ index 7caaaaf226..74df84a231 100644
  status_t AudioFlingerClientAdapter::setStreamVolume(audio_stream_type_t stream, float value,
                                                      audio_io_handle_t output) {
      AudioStreamType streamAidl = VALUE_OR_RETURN_STATUS(
-@@ -993,6 +1015,26 @@ Status AudioFlingerServerAdapter::getMasterBalance(float* _aidl_return) {
+@@ -1014,6 +1036,26 @@ Status AudioFlingerServerAdapter::getMasterBalance(float* _aidl_return) {
      return Status::fromStatusT(mDelegate->getMasterBalance(_aidl_return));
  }
  
@@ -253,7 +255,7 @@ index 7caaaaf226..74df84a231 100644
                                                    int32_t output) {
      audio_stream_type_t streamLegacy = VALUE_OR_RETURN_BINDER(
 diff --git a/media/libaudioclient/aidl/android/media/IAudioFlingerService.aidl b/media/libaudioclient/aidl/android/media/IAudioFlingerService.aidl
-index 6412810b6d..b193b06810 100644
+index 31d3af5f16..da425fa662 100644
 --- a/media/libaudioclient/aidl/android/media/IAudioFlingerService.aidl
 +++ b/media/libaudioclient/aidl/android/media/IAudioFlingerService.aidl
 @@ -16,6 +16,7 @@
@@ -276,7 +278,7 @@ index 6412810b6d..b193b06810 100644
       * Set/gets stream type state. This will probably be used by
       * the preference panel, mostly.
 diff --git a/media/libaudioclient/include/media/AudioSystem.h b/media/libaudioclient/include/media/AudioSystem.h
-index 8f8c9ddf5f..5c0a1f2a9e 100644
+index a1f7941770..2993dc1cfc 100644
 --- a/media/libaudioclient/include/media/AudioSystem.h
 +++ b/media/libaudioclient/include/media/AudioSystem.h
 @@ -40,6 +40,7 @@
@@ -287,7 +289,7 @@ index 8f8c9ddf5f..5c0a1f2a9e 100644
  #include <media/AudioContainers.h>
  #include <media/AudioDeviceTypeAddr.h>
  #include <media/AudioPolicy.h>
-@@ -769,6 +770,10 @@ public:
+@@ -774,6 +775,10 @@ public:
  
      static int32_t getAAudioHardwareBurstMinUsec();
  
@@ -299,7 +301,7 @@ index 8f8c9ddf5f..5c0a1f2a9e 100644
  
      class AudioFlingerClient: public IBinder::DeathRecipient, public media::BnAudioFlingerClient
 diff --git a/media/libaudioclient/include/media/IAudioFlinger.h b/media/libaudioclient/include/media/IAudioFlinger.h
-index 2e2ef657ca..906d345f98 100644
+index 5a1e037f0e..155c76f4e8 100644
 --- a/media/libaudioclient/include/media/IAudioFlinger.h
 +++ b/media/libaudioclient/include/media/IAudioFlinger.h
 @@ -25,6 +25,7 @@
@@ -310,10 +312,10 @@ index 2e2ef657ca..906d345f98 100644
  #include <media/AudioClient.h>
  #include <media/AudioCommonTypes.h>
  #include <media/DeviceDescriptorBase.h>
-@@ -384,6 +385,10 @@ public:
-     virtual status_t supportsBluetoothVariableLatency(bool* support) = 0;
+@@ -388,6 +389,10 @@ public:
  
-     virtual status_t getAudioPolicyConfig(media::AudioPolicyConfig* output) = 0;
+     virtual status_t getAudioMixPort(const struct audio_port_v7 *devicePort,
+                                      struct audio_port_v7 *mixPort) const = 0;
 +
 +    virtual status_t setAppVolume(const String8& packageName, const float value) = 0;
 +    virtual status_t setAppMute(const String8& packageName, const bool value) = 0;
@@ -321,9 +323,9 @@ index 2e2ef657ca..906d345f98 100644
  };
  
  /**
-@@ -499,6 +504,10 @@ public:
-     status_t invalidateTracks(const std::vector<audio_port_handle_t>& portIds) override;
-     status_t getAudioPolicyConfig(media::AudioPolicyConfig* output) override;
+@@ -505,6 +510,10 @@ public:
+     status_t getAudioMixPort(const struct audio_port_v7 *devicePort,
+                              struct audio_port_v7 *mixPort) const override;
  
 +    status_t setAppVolume(const String8& packageName, const float value) override;
 +    status_t setAppMute(const String8& packageName, const bool value) override;
@@ -332,20 +334,20 @@ index 2e2ef657ca..906d345f98 100644
  private:
      const sp<media::IAudioFlingerService> mDelegate;
  };
-@@ -599,6 +608,9 @@ public:
-             INVALIDATE_TRACKS = media::BnAudioFlingerService::TRANSACTION_invalidateTracks,
+@@ -606,6 +615,9 @@ public:
              GET_AUDIO_POLICY_CONFIG =
                      media::BnAudioFlingerService::TRANSACTION_getAudioPolicyConfig,
+             GET_AUDIO_MIX_PORT = media::BnAudioFlingerService::TRANSACTION_getAudioMixPort,
 +            SET_APP_VOLUME = media::BnAudioFlingerService::TRANSACTION_setAppVolume,
 +            SET_APP_MUTE = media::BnAudioFlingerService::TRANSACTION_setAppMute,
 +            LIST_APP_VOLUMES = media::BnAudioFlingerService::TRANSACTION_listAppVolumes,
          };
  
      protected:
-@@ -732,6 +744,10 @@ public:
-                                  sp<media::ISoundDose>* _aidl_return) override;
-     Status invalidateTracks(const std::vector<int32_t>& portIds) override;
-     Status getAudioPolicyConfig(media::AudioPolicyConfig* _aidl_return) override;
+@@ -742,6 +754,10 @@ public:
+     Status getAudioMixPort(const media::AudioPortFw& devicePort,
+                            const media::AudioPortFw& mixPort,
+                            media::AudioPortFw* _aidl_return) override;
 +
 +    Status setAppVolume(const std::string& packageName, const float value) override;
 +    Status setAppMute(const std::string& packageName, const bool value) override;
@@ -354,26 +356,26 @@ index 2e2ef657ca..906d345f98 100644
      const sp<AudioFlingerServerAdapter::Delegate> mDelegate;
  };
 diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
-index 02531bd167..bf0d110725 100644
+index 9420bf19aa..3c7307769a 100644
 --- a/services/audioflinger/AudioFlinger.cpp
 +++ b/services/audioflinger/AudioFlinger.cpp
-@@ -1244,6 +1244,15 @@ status_t AudioFlinger::createTrack(const media::CreateTrackRequest& _input,
+@@ -1118,6 +1118,15 @@ status_t AudioFlinger::createTrack(const media::CreateTrackRequest& _input,
          output.portId = portId;
  
          if (lStatus == NO_ERROR) {
 +            // set volume
 +            String8 trackCreatorPackage = track->getPackageName();
-+            if (!trackCreatorPackage.isEmpty() &&
++            if (!trackCreatorPackage.empty() &&
 +                mAppVolumeConfigs.find(trackCreatorPackage) != mAppVolumeConfigs.end()) {
 +                media::AppVolume config = mAppVolumeConfigs[trackCreatorPackage];
 +                track->setAppMute(config.muted);
 +                track->setAppVolume(config.volume);
 +            }
 +
-             // no risk of deadlock because AudioFlinger::mLock is held
-             Mutex::Autolock _dl(thread->mLock);
+             // no risk of deadlock because AudioFlinger::mutex() is held
+             audio_utils::lock_guard _dl(thread->mutex());
              // Connect secondary outputs. Failure on a secondary output must not imped the primary
-@@ -2120,6 +2129,61 @@ uint32_t AudioFlinger::getInputFramesLost(audio_io_handle_t ioHandle) const
+@@ -2003,6 +2012,58 @@ uint32_t AudioFlinger::getInputFramesLost(audio_io_handle_t ioHandle) const
      return 0;
  }
  
@@ -381,10 +383,9 @@ index 02531bd167..bf0d110725 100644
 +status_t AudioFlinger::listAppVolumes(std::vector<media::AppVolume> *vols)
 +{
 +    std::set<media::AppVolume> volSet;
-+    Mutex::Autolock _l(mLock);
++    audio_utils::lock_guard _l(mutex());
 +    for (size_t i = 0; i < mPlaybackThreads.size(); i++) {
-+        sp<PlaybackThread> thread = mPlaybackThreads.valueAt(i);
-+        thread->listAppVolumes(volSet);
++        mPlaybackThreads.valueAt(i)->listAppVolumes(volSet);
 +    }
 +
 +    vols->insert(vols->begin(), volSet.begin(), volSet.end());
@@ -394,10 +395,9 @@ index 02531bd167..bf0d110725 100644
 +
 +status_t AudioFlinger::setAppVolume(const String8& packageName, const float value)
 +{
-+    Mutex::Autolock _l(mLock);
++    audio_utils::lock_guard _l(mutex());
 +    for (size_t i = 0; i < mPlaybackThreads.size(); i++) {
-+        sp<PlaybackThread> t = mPlaybackThreads.valueAt(i);
-+        t->setAppVolume(packageName, value);
++        mPlaybackThreads.valueAt(i)->setAppVolume(packageName, value);
 +    }
 +
 +    if (mAppVolumeConfigs.find(packageName) == mAppVolumeConfigs.end()) {
@@ -414,10 +414,9 @@ index 02531bd167..bf0d110725 100644
 +
 +status_t AudioFlinger::setAppMute(const String8& packageName, const bool value)
 +{
-+    Mutex::Autolock _l(mLock);
++    audio_utils::lock_guard _l(mutex());
 +    for (size_t i = 0; i < mPlaybackThreads.size(); i++) {
-+        sp<PlaybackThread> t = mPlaybackThreads.valueAt(i);
-+        t->setAppMute(packageName, value);
++        mPlaybackThreads.valueAt(i)->setAppMute(packageName, value);
 +    }
 +
 +    if (mAppVolumeConfigs.find(packageName) == mAppVolumeConfigs.end()) {
@@ -435,7 +434,7 @@ index 02531bd167..bf0d110725 100644
  status_t AudioFlinger::setVoiceVolume(float value)
  {
      status_t ret = initCheck();
-@@ -4807,7 +4871,9 @@ status_t AudioFlinger::onTransactWrapper(TransactionCode code,
+@@ -4835,7 +4896,9 @@ status_t AudioFlinger::onTransactWrapper(TransactionCode code,
          case TransactionCode::UPDATE_SECONDARY_OUTPUTS:
          case TransactionCode::SET_BLUETOOTH_VARIABLE_LATENCY_ENABLED:
          case TransactionCode::IS_BLUETOOTH_VARIABLE_LATENCY_ENABLED:
@@ -447,38 +446,85 @@ index 02531bd167..bf0d110725 100644
                  ALOGW("%s: transaction %d received from PID %d unauthorized UID %d",
                        __func__, code, IPCThreadState::self()->getCallingPid(),
 diff --git a/services/audioflinger/AudioFlinger.h b/services/audioflinger/AudioFlinger.h
-index 7058a25495..d5d06d55ae 100644
+index 0f75d6e44b..b586d6f4e5 100644
 --- a/services/audioflinger/AudioFlinger.h
 +++ b/services/audioflinger/AudioFlinger.h
-@@ -364,6 +364,14 @@ private:
-     Vector< sp<NBLog::Writer> > mUnregisteredWriters;
-     Mutex               mUnregisteredWritersLock;
+@@ -405,6 +405,14 @@ private:
+ 
+     sp<EffectsFactoryHalInterface> getEffectsFactory();
  
 +public:
-+    status_t    setAppVolume(const String8& packageName, const float value);
-+    status_t    setAppMute(const String8& packageName, const bool value);
-+    status_t    listAppVolumes(std::vector<media::AppVolume> *vols);
++    status_t setAppVolume(const String8& packageName, const float value);
++    status_t setAppMute(const String8& packageName, const bool value);
++    status_t listAppVolumes(std::vector<media::AppVolume> *vols);
 +
 +private:
-+    std::map<String8, media::AppVolume>  mAppVolumeConfigs;
++    std::map<String8, media::AppVolume> mAppVolumeConfigs;
 +
  public:
-     // Life cycle of gAudioFlinger and AudioFlinger:
-     //
-diff --git a/services/audioflinger/PlaybackTracks.h b/services/audioflinger/PlaybackTracks.h
-index 57655d55a0..fc8e137317 100644
---- a/services/audioflinger/PlaybackTracks.h
-+++ b/services/audioflinger/PlaybackTracks.h
-@@ -153,7 +153,7 @@ public:
-     sp<media::VolumeShaper::State> getVolumeShaperState(int id);
-     sp<media::VolumeHandler>   getVolumeHandler() { return mVolumeHandler; }
+     // TODO(b/292281786): Remove this when Oboeservice can get access to
+     // openMmapStream through an IAudioFlinger handle directly.
+diff --git a/services/audioflinger/IAfThread.h b/services/audioflinger/IAfThread.h
+index 7084be9364..3a137a9e20 100644
+--- a/services/audioflinger/IAfThread.h
++++ b/services/audioflinger/IAfThread.h
+@@ -26,6 +26,7 @@
+ #include <datapath/AudioStreamOut.h>
+ #include <datapath/VolumeInterface.h>
+ #include <fastpath/FastMixerDumpState.h>
++#include <media/AppVolume.h>
+ #include <media/DeviceDescriptorBase.h>
+ #include <media/MmapStreamInterface.h>
+ #include <media/audiohal/StreamHalInterface.h>
+@@ -464,6 +465,10 @@ public:
+     virtual bool isTrackActive(const sp<IAfTrack>& track) const REQUIRES(mutex()) = 0;
+     virtual void addOutputTrack_l(const sp<IAfTrack>& track) REQUIRES(mutex()) = 0;
+ 
++    virtual status_t setAppVolume(const String8& packageName, const float value) = 0;
++    virtual status_t setAppMute(const String8& packageName, const bool muted) = 0;
++    virtual void listAppVolumes(std::set<media::AppVolume> &container) = 0;
++
+     virtual AudioStreamOut* getOutput_l() const REQUIRES(mutex()) = 0;
+     virtual AudioStreamOut* getOutput() const EXCLUDES_ThreadBase_Mutex = 0;
+     virtual AudioStreamOut* clearOutput() EXCLUDES_ThreadBase_Mutex = 0;
+diff --git a/services/audioflinger/IAfTrack.h b/services/audioflinger/IAfTrack.h
+index 2302e137d6..666efccb0d 100644
+--- a/services/audioflinger/IAfTrack.h
++++ b/services/audioflinger/IAfTrack.h
+@@ -323,11 +323,18 @@ public:
+     virtual sp<media::VolumeShaper::State> getVolumeShaperState(int id) const = 0;
+     virtual sp<media::VolumeHandler> getVolumeHandler() const = 0;
      /** Set the computed normalized final volume of the track.
 -     * !masterMute * masterVolume * streamVolume * averageLRVolume */
 +     * !masterMute * !appMuted * masterVolume * streamVolume * averageLRVolume * appVolume */
-     void                setFinalVolume(float volumeLeft, float volumeRight);
-     float               getFinalVolume() const { return mFinalVolume; }
-     void                getFinalVolume(float* left, float* right) const {
-@@ -161,6 +161,13 @@ public:
+     virtual void setFinalVolume(float volumeLeft, float volumeRight) = 0;
+     virtual float getFinalVolume() const = 0;
+     virtual void getFinalVolume(float* left, float* right) const = 0;
+ 
++    virtual void setAppVolume(float volume) = 0;
++    virtual float getAppVolume() const = 0;
++    virtual void setAppMute(bool val) = 0;
++    virtual bool isAppMuted() = 0;
++
++    virtual String8 getPackageName() const = 0;
++
+     using SourceMetadatas = std::vector<playback_track_metadata_v7_t>;
+     using MetadataInserter = std::back_insert_iterator<SourceMetadatas>;
+     /** Copy the track metadata in the provided iterator. Thread safe. */
+diff --git a/services/audioflinger/PlaybackTracks.h b/services/audioflinger/PlaybackTracks.h
+index 4a1948ce59..05588dcbdb 100644
+--- a/services/audioflinger/PlaybackTracks.h
++++ b/services/audioflinger/PlaybackTracks.h
+@@ -152,7 +152,7 @@ public:
+     sp<media::VolumeShaper::State> getVolumeShaperState(int id) const final;
+     sp<media::VolumeHandler> getVolumeHandler() const final{ return mVolumeHandler; }
+     /** Set the computed normalized final volume of the track.
+-     * !masterMute * masterVolume * streamVolume * averageLRVolume */
++     * !masterMute * !appMuted * masterVolume * streamVolume * averageLRVolume * appVolume */
+     void setFinalVolume(float volumeLeft, float volumeRight) final;
+     float getFinalVolume() const final { return mFinalVolume; }
+     void getFinalVolume(float* left, float* right) const final {
+@@ -160,6 +160,13 @@ public:
                              *right = mFinalVolumeRight;
      }
  
@@ -492,7 +538,7 @@ index 57655d55a0..fc8e137317 100644
      using SourceMetadatas = std::vector<playback_track_metadata_v7_t>;
      using MetadataInserter = std::back_insert_iterator<SourceMetadatas>;
      /** Copy the track metadata in the provided iterator. Thread safe. */
-@@ -347,6 +354,8 @@ private:
+@@ -355,6 +362,8 @@ private:
          for (auto& tp : mTeePatches) { f(tp.patchTrack); }
      };
  
@@ -501,7 +547,7 @@ index 57655d55a0..fc8e137317 100644
      size_t              mPresentationCompleteFrames = 0; // (Used for Mixed tracks)
                                      // The number of frames written to the
                                      // audio HAL when this track is considered fully rendered.
-@@ -372,6 +381,8 @@ private:
+@@ -380,6 +389,8 @@ private:
                                            // volume
      float               mFinalVolumeRight; // combine master volume, stream type volume and track
                                             // volume
@@ -511,26 +557,26 @@ index 57655d55a0..fc8e137317 100644
      bool                mResumeToStopping; // track was paused in stopping state.
      bool                mFlushHwPending; // track requests for thread flush
 diff --git a/services/audioflinger/Threads.cpp b/services/audioflinger/Threads.cpp
-index 8447de6836..25a9bb2be0 100644
+index 18bb1737a3..111f8d4cd7 100644
 --- a/services/audioflinger/Threads.cpp
 +++ b/services/audioflinger/Threads.cpp
-@@ -24,6 +24,7 @@
- #include <math.h>
- #include <fcntl.h>
- #include <memory>
+@@ -47,6 +47,7 @@
+ #include <binder/IPCThreadState.h>
+ #include <binder/IServiceManager.h>
+ #include <binder/PersistableBundle.h>
 +#include <set>
- #include <sstream>
- #include <string>
- #include <linux/futex.h>
-@@ -2694,6 +2695,43 @@ ssize_t AudioFlinger::PlaybackThread::Tracks<T>::remove(const sp<T> &track)
+ #include <cutils/bitops.h>
+ #include <cutils/properties.h>
+ #include <fastpath/AutoPark.h>
+@@ -2760,6 +2761,43 @@ ssize_t PlaybackThread::Tracks<T>::remove(const sp<T>& track)
      return index;
  }
  
-+void AudioFlinger::PlaybackThread::listAppVolumes(std::set<media::AppVolume> &container)
++void PlaybackThread::listAppVolumes(std::set<media::AppVolume> &container)
 +{
-+    Mutex::Autolock _l(mLock);
-+    for (sp<Track> track : mTracks) {
-+        if (!track->getPackageName().isEmpty()) {
++    audio_utils::lock_guard _l(mutex());
++    for (sp<IAfTrack> track : mTracks) {
++        if (!track->getPackageName().empty()) {
 +            media::AppVolume av;
 +            av.packageName = track->getPackageName();
 +            av.muted = track->isAppMuted();
@@ -541,10 +587,10 @@ index 8447de6836..25a9bb2be0 100644
 +    }
 +}
 +
-+status_t AudioFlinger::PlaybackThread::setAppVolume(const String8& packageName, const float value)
++status_t PlaybackThread::setAppVolume(const String8& packageName, const float value)
 +{
-+    Mutex::Autolock _l(mLock);
-+    for (sp<Track> track : mTracks) {
++    audio_utils::lock_guard _l(mutex());
++    for (sp<IAfTrack> track : mTracks) {
 +        if (packageName == track->getPackageName()) {
 +            track->setAppVolume(value);
 +        }
@@ -552,10 +598,10 @@ index 8447de6836..25a9bb2be0 100644
 +    return NO_ERROR;
 +}
 +
-+status_t AudioFlinger::PlaybackThread::setAppMute(const String8& packageName, const bool value)
++status_t PlaybackThread::setAppMute(const String8& packageName, const bool value)
 +{
-+    Mutex::Autolock _l(mLock);
-+    for (sp<Track> track : mTracks) {
++    audio_utils::lock_guard _l(mutex());
++    for (sp<IAfTrack> track : mTracks) {
 +        if (packageName == track->getPackageName()) {
 +            track->setAppMute(value);
 +        }
@@ -563,12 +609,12 @@ index 8447de6836..25a9bb2be0 100644
 +    return NO_ERROR;
 +}
 +
- uint32_t AudioFlinger::PlaybackThread::correctLatency_l(uint32_t latency) const
+ uint32_t PlaybackThread::correctLatency_l(uint32_t latency) const
  {
      return latency;
-@@ -5556,10 +5594,12 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
+@@ -5647,10 +5685,12 @@ PlaybackThread::mixer_state MixerThread::prepareTracks_l(
                  }
-                 sp<AudioTrackServerProxy> proxy = track->mAudioTrackServerProxy;
+                 sp<AudioTrackServerProxy> proxy = track->audioTrackServerProxy();
                  float volume;
 -                if (track->isPlaybackRestricted() || mStreamTypes[track->streamType()].mute) {
 +                if (track->isPlaybackRestricted() ||
@@ -581,7 +627,7 @@ index 8447de6836..25a9bb2be0 100644
                  }
  
                  handleVoipVolume_l(&volume);
-@@ -5727,13 +5767,15 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
+@@ -5818,13 +5858,15 @@ PlaybackThread::mixer_state MixerThread::prepareTracks_l(
              uint32_t vl, vr;       // in U8.24 integer format
              float vlf, vrf, vaf;   // in [0.0, 1.0] float format
              // read original volumes with volume control
@@ -589,9 +635,9 @@ index 8447de6836..25a9bb2be0 100644
 +            float v = masterVolume * mStreamTypes[track->streamType()].volume
 +                                   * track->getAppVolume();
              // Always fetch volumeshaper volume to ensure state is updated.
-             const sp<AudioTrackServerProxy> proxy = track->mAudioTrackServerProxy;
+             const sp<AudioTrackServerProxy> proxy = track->audioTrackServerProxy();
              const float vh = track->getVolumeHandler()->getVolume(
-                     track->mAudioTrackServerProxy->framesReleased()).first;
+                     track->audioTrackServerProxy()->framesReleased()).first;
  
 -            if (mStreamTypes[track->streamType()].mute || track->isPlaybackRestricted()) {
 +            if (mStreamTypes[track->streamType()].mute
@@ -599,7 +645,7 @@ index 8447de6836..25a9bb2be0 100644
                  v = 0;
              }
  
-@@ -6475,11 +6517,13 @@ void AudioFlinger::DirectOutputThread::processVolume_l(Track *track, bool lastTr
+@@ -6575,11 +6617,13 @@ void DirectOutputThread::processVolume_l(IAfTrack* track, bool lastTrack)
  
      const bool clientVolumeMute = (left == 0.f && right == 0.f);
  
@@ -616,25 +662,25 @@ index 8447de6836..25a9bb2be0 100644
          if (left > GAIN_FLOAT_UNITY) {
              left = GAIN_FLOAT_UNITY;
 diff --git a/services/audioflinger/Threads.h b/services/audioflinger/Threads.h
-index b5332e18db..343f3e0c79 100644
+index ea994a5b09..b3f647ad0b 100644
 --- a/services/audioflinger/Threads.h
 +++ b/services/audioflinger/Threads.h
-@@ -973,6 +973,10 @@ public:
+@@ -886,6 +886,10 @@ public:
+         mTracks.add(track);
+     }
  
-                 void        setVolumeForOutput_l(float left, float right) const override;
- 
-+                status_t    setAppVolume(const String8& packageName, const float value);
-+                status_t    setAppMute(const String8& packageName, const bool muted);
-+                void        listAppVolumes(std::set<media::AppVolume> &container);
++    status_t setAppVolume(const String8& packageName, const float value) final;
++    status_t setAppMute(const String8& packageName, const bool muted) final;
++    void listAppVolumes(std::set<media::AppVolume> &container) final;
 +
-                 sp<Track>   createTrack_l(
-                                 const sp<AudioFlinger::Client>& client,
-                                 audio_stream_type_t streamType,
+ protected:
+     // Code snippets that were lifted up out of threadLoop()
+     virtual void threadLoop_mix() REQUIRES(ThreadBase_ThreadLoop) = 0;
 diff --git a/services/audioflinger/Tracks.cpp b/services/audioflinger/Tracks.cpp
-index ec5fbdaaf4..ba5f3308db 100644
+index fe582eb45f..05eb505cd8 100644
 --- a/services/audioflinger/Tracks.cpp
 +++ b/services/audioflinger/Tracks.cpp
-@@ -692,6 +692,20 @@ AudioFlinger::PlaybackThread::Track::Track(
+@@ -793,6 +793,20 @@ Track::Track(
      ALOGV_IF(sharedBuffer != 0, "%s(%d): sharedBuffer: %p, size: %zu",
              __func__, mId, sharedBuffer->unsecurePointer(), sharedBuffer->size());
  
@@ -655,21 +701,21 @@ index ec5fbdaaf4..ba5f3308db 100644
      if (mCblk == NULL) {
          return;
      }
-@@ -1434,6 +1448,16 @@ void AudioFlinger::PlaybackThread::Track::setFinalVolume(float volumeLeft, float
+@@ -1541,6 +1555,16 @@ void Track::setFinalVolume(float volumeLeft, float volumeRight)
      }
  }
  
-+void AudioFlinger::PlaybackThread::Track::setAppVolume(float volume)
++void Track::setAppVolume(float volume)
 +{
 +    mAppVolume = volume;
 +}
 +
-+void AudioFlinger::PlaybackThread::Track::setAppMute(bool val)
++void Track::setAppMute(bool val)
 +{
 +    mAppMuted = val;
 +}
 +
- void AudioFlinger::PlaybackThread::Track::copyMetadataTo(MetadataInserter& backInserter) const
+ void Track::copyMetadataTo(MetadataInserter& backInserter) const
  {
      // Do not forward metadata for PatchTrack with unspecified stream type
 -- 

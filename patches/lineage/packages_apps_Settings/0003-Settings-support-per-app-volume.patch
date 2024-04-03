@@ -1,4 +1,4 @@
-From 7dc0742397e03416647c834ab0cc3059eb2f00c1 Mon Sep 17 00:00:00 2001
+From 5ebd9dd6041e78f7d6216a4405a0c3849f396649 Mon Sep 17 00:00:00 2001
 From: cjybyjk <cjybyjk@zjnu.edu.cn>
 Date: Mon, 5 Sep 2022 04:43:13 +0000
 Subject: [PATCH] Settings: support per-app volume [3/3]
@@ -6,21 +6,28 @@ Subject: [PATCH] Settings: support per-app volume [3/3]
 Change-Id: I3e72a4b0fda68a5cd1e9a35fc161a1d7ddae6d7e
 ---
  AndroidManifest.xml                           |   4 +
- res/values/cm_strings.xml                     |   5 +
+ res/values-zh-rCN/extra_strings.xml           |  22 +++
+ res/values-zh-rHK/extra_strings.xml           |  22 +++
+ res/values-zh-rTW/extra_strings.xml           |  22 +++
+ res/values/extra_strings.xml                  |  22 +++
  res/xml/sound_settings.xml                    |   8 +
  .../settings/media/AppVolumeSlice.java        | 150 ++++++++++++++++++
  .../settings/panel/AppVolumePanel.java        |  65 ++++++++
  .../panel/PanelFeatureProviderImpl.java       |   2 +
  .../settings/slices/CustomSliceRegistry.java  |  12 ++
- 7 files changed, 246 insertions(+)
+ 10 files changed, 329 insertions(+)
+ create mode 100644 res/values-zh-rCN/extra_strings.xml
+ create mode 100644 res/values-zh-rHK/extra_strings.xml
+ create mode 100644 res/values-zh-rTW/extra_strings.xml
+ create mode 100644 res/values/extra_strings.xml
  create mode 100644 src/com/android/settings/media/AppVolumeSlice.java
  create mode 100644 src/com/android/settings/panel/AppVolumePanel.java
 
 diff --git a/AndroidManifest.xml b/AndroidManifest.xml
-index 4d021e6aecf..4c8c353d7cc 100644
+index deb24592737..498252a90b4 100644
 --- a/AndroidManifest.xml
 +++ b/AndroidManifest.xml
-@@ -4632,6 +4632,10 @@
+@@ -4650,6 +4650,10 @@
                      <action android:name="android.settings.panel.action.VOLUME" />
                      <category android:name="android.intent.category.DEFAULT" />
                  </intent-filter>
@@ -31,27 +38,123 @@ index 4d021e6aecf..4c8c353d7cc 100644
          </activity>
  
          <activity android:name=".wifi.addappnetworks.AddAppNetworksActivity"
-diff --git a/res/values/cm_strings.xml b/res/values/cm_strings.xml
-index f1ae96a5323..4b605f67ee4 100644
---- a/res/values/cm_strings.xml
-+++ b/res/values/cm_strings.xml
-@@ -15,6 +15,11 @@
-      limitations under the License.
- -->
- <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+diff --git a/res/values-zh-rCN/extra_strings.xml b/res/values-zh-rCN/extra_strings.xml
+new file mode 100644
+index 00000000000..87ff796748f
+--- /dev/null
++++ b/res/values-zh-rCN/extra_strings.xml
+@@ -0,0 +1,22 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2017-2023 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++    <!-- Per-app volume control -->
++    <string name="app_volume">应用音量</string>
++    <string name="app_volume_title">分应用音量控制</string>
++    <string name="app_volume_summary">允许为每个应用设置不同的音量</string>
++</resources>
+diff --git a/res/values-zh-rHK/extra_strings.xml b/res/values-zh-rHK/extra_strings.xml
+new file mode 100644
+index 00000000000..058a628324d
+--- /dev/null
++++ b/res/values-zh-rHK/extra_strings.xml
+@@ -0,0 +1,22 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2017-2023 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++    <!-- Per-app volume control -->
++    <string name="app_volume">應用程式音量</string>
++    <string name="app_volume_title">個別應用控制音量</string>
++    <string name="app_volume_summary">允許為每個應用設定不同的音量</string>
++</resources>
+diff --git a/res/values-zh-rTW/extra_strings.xml b/res/values-zh-rTW/extra_strings.xml
+new file mode 100644
+index 00000000000..058a628324d
+--- /dev/null
++++ b/res/values-zh-rTW/extra_strings.xml
+@@ -0,0 +1,22 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2017-2023 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++    <!-- Per-app volume control -->
++    <string name="app_volume">應用程式音量</string>
++    <string name="app_volume_title">個別應用控制音量</string>
++    <string name="app_volume_summary">允許為每個應用設定不同的音量</string>
++</resources>
+diff --git a/res/values/extra_strings.xml b/res/values/extra_strings.xml
+new file mode 100644
+index 00000000000..f5b37b101ac
+--- /dev/null
++++ b/res/values/extra_strings.xml
+@@ -0,0 +1,22 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     Copyright (C) 2017-2023 The LineageOS Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 +    <!-- Per-app volume control -->
 +    <string name="app_volume">App volume</string>
 +    <string name="app_volume_title">Per-app volume control</string>
 +    <string name="app_volume_summary">Allow to set different volume levels for each app</string>
-+
-     <!-- Private DNS -->
-     <string name="private_dns_mode_cloudflare" translatable="false">Cloudflare DNS</string>
-     <!-- Alternative: 1dot1dot1dot1.cloudflare-dns.com -->
++</resources>
 diff --git a/res/xml/sound_settings.xml b/res/xml/sound_settings.xml
-index af899502ac6..1bf144e5c39 100644
+index b49345d698e..2c98cf06118 100644
 --- a/res/xml/sound_settings.xml
 +++ b/res/xml/sound_settings.xml
-@@ -178,6 +178,14 @@
+@@ -168,6 +168,14 @@
          android:ringtoneType="alarm"
          android:order="-60"/>
  
@@ -64,7 +167,7 @@ index af899502ac6..1bf144e5c39 100644
 +        android:order="-5"/>
 +
      <!-- Dial pad tones -->
-     <SwitchPreference
+     <SwitchPreferenceCompat
          android:key="dial_pad_tones"
 diff --git a/src/com/android/settings/media/AppVolumeSlice.java b/src/com/android/settings/media/AppVolumeSlice.java
 new file mode 100644
@@ -224,7 +327,7 @@ index 00000000000..e653ffc0fb6
 +}
 diff --git a/src/com/android/settings/panel/AppVolumePanel.java b/src/com/android/settings/panel/AppVolumePanel.java
 new file mode 100644
-index 00000000000..afbfc2908ee
+index 00000000000..876a15cf576
 --- /dev/null
 +++ b/src/com/android/settings/panel/AppVolumePanel.java
 @@ -0,0 +1,65 @@
@@ -307,7 +410,7 @@ index 71711f9228e..308990ec051 100644
  
          throw new IllegalStateException("No matching panel for: " + panelType);
 diff --git a/src/com/android/settings/slices/CustomSliceRegistry.java b/src/com/android/settings/slices/CustomSliceRegistry.java
-index b7fe091e6c4..cdf557077ac 100644
+index 8f301066e4a..75ec2bf84e2 100644
 --- a/src/com/android/settings/slices/CustomSliceRegistry.java
 +++ b/src/com/android/settings/slices/CustomSliceRegistry.java
 @@ -35,6 +35,7 @@ import com.android.settings.homepage.contextualcards.slices.DarkThemeSlice;
@@ -318,7 +421,7 @@ index b7fe091e6c4..cdf557077ac 100644
  import com.android.settings.media.MediaOutputIndicatorSlice;
  import com.android.settings.media.RemoteMediaSlice;
  import com.android.settings.network.ProviderModelSlice;
-@@ -313,6 +314,16 @@ public class CustomSliceRegistry {
+@@ -293,6 +294,16 @@ public class CustomSliceRegistry {
              .appendPath("always_on_display")
              .build();
  
@@ -335,14 +438,14 @@ index b7fe091e6c4..cdf557077ac 100644
      @VisibleForTesting
      static final Map<Uri, Class<? extends CustomSliceable>> sUriToSlice;
  
-@@ -327,6 +338,7 @@ public class CustomSliceRegistry {
-         sUriToSlice.put(ALWAYS_ON_SLICE_URI, AlwaysOnDisplaySlice.class);
-         sUriToSlice.put(MEDIA_OUTPUT_INDICATOR_SLICE_URI, MediaOutputIndicatorSlice.class);
-         sUriToSlice.put(REMOTE_MEDIA_SLICE_URI, RemoteMediaSlice.class);
+@@ -313,6 +324,7 @@ public class CustomSliceRegistry {
+         sUriToSlice.put(CONTEXTUAL_ADAPTIVE_SLEEP_URI, ContextualAdaptiveSleepSlice.class);
+         sUriToSlice.put(LOW_STORAGE_SLICE_URI, LowStorageSlice.class);
+         sUriToSlice.put(BLUETOOTH_DEVICES_SLICE_URI, BluetoothDevicesSlice.class);
 +        sUriToSlice.put(APP_VOLUME_SLICE_URI, AppVolumeSlice.class);
+     }
  
-         // Slices for contextual card.
-         sUriToSlice.put(FACE_ENROLL_SLICE_URI, FaceSetupSlice.class);
+     public static Class<? extends CustomSliceable> getSliceClassByUri(Uri uri) {
 -- 
 2.25.1
 

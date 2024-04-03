@@ -1,33 +1,32 @@
-From 876f0ae35f9795e5716525b5e0951640be4a6798 Mon Sep 17 00:00:00 2001
+From b73e28cc73d5ab7b8ab36279e8f83455eb472f8f Mon Sep 17 00:00:00 2001
 From: minaripenguin <minaripenguin@users.noreply.github.com>
 Date: Thu, 30 Nov 2023 10:39:01 +0800
-Subject: [PATCH 06/11] SystemUI: Implement face unlock recognition animation
- and text
+Subject: [PATCH 2/3] SystemUI: Implement face unlock recognition animation and
+ text
 
 Co-authored-by: jhenrique09 <jhsv09@gmail.com>
-Change-Id: I5ae7e39d3c8e31355a052d86930a36473fb80769
+Change-Id: Iabbada82e24704172bba5e445c3687c44933d0d1
 Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
 ---
- .../res/drawable/face_not_verified.xml        |  16 ++
- .../SystemUI/res/drawable/face_scanning.xml   |  10 +
- .../SystemUI/res/drawable/face_success.xml    |  16 ++
+ .../res/drawable/face_not_verified.xml        |  16 +++
+ .../SystemUI/res/drawable/face_scanning.xml   |  10 ++
+ .../SystemUI/res/drawable/face_success.xml    |  16 +++
  .../res/layout/keyguard_bottom_area.xml       |  11 ++
- .../SystemUI/res/values-de/derp_strings.xml   | 174 ++++++++++++++++++
- .../res/values-zh-rCN/lineage_strings.xml     |  20 ++
- .../res/values-zh-rHK/lineage_strings.xml     |  20 ++
- .../res/values-zh-rTW/lineage_strings.xml     |  20 ++
- .../SystemUI/res/values/lineage_strings.xml   |  20 ++
- .../KeyguardIndicationController.java         |  63 ++++++-
- .../statusbar/phone/FaceUnlockImageView.kt    | 102 ++++++++++
- 11 files changed, 467 insertions(+), 5 deletions(-)
+ .../res/values-zh-rCN/extra_strings.xml       |  20 ++++
+ .../res/values-zh-rHK/extra_strings.xml       |  20 ++++
+ .../res/values-zh-rTW/extra_strings.xml       |  20 ++++
+ .../SystemUI/res/values/extra_strings.xml     |  20 ++++
+ .../KeyguardIndicationController.java         |  63 ++++++++++-
+ .../statusbar/phone/FaceUnlockImageView.kt    | 102 ++++++++++++++++++
+ 10 files changed, 293 insertions(+), 5 deletions(-)
  create mode 100644 packages/SystemUI/res/drawable/face_not_verified.xml
  create mode 100644 packages/SystemUI/res/drawable/face_scanning.xml
  create mode 100644 packages/SystemUI/res/drawable/face_success.xml
- create mode 100644 packages/SystemUI/res/values-de/derp_strings.xml
- create mode 100644 packages/SystemUI/res/values-zh-rCN/lineage_strings.xml
- create mode 100644 packages/SystemUI/res/values-zh-rHK/lineage_strings.xml
- create mode 100644 packages/SystemUI/res/values-zh-rTW/lineage_strings.xml
- create mode 100644 packages/SystemUI/res/values/lineage_strings.xml
+ create mode 100644 packages/SystemUI/res/values-zh-rCN/extra_strings.xml
+ create mode 100644 packages/SystemUI/res/values-zh-rHK/extra_strings.xml
+ create mode 100644 packages/SystemUI/res/values-zh-rTW/extra_strings.xml
+ create mode 100644 packages/SystemUI/res/values/extra_strings.xml
  create mode 100644 packages/SystemUI/src/com/android/systemui/statusbar/phone/FaceUnlockImageView.kt
 
 diff --git a/packages/SystemUI/res/drawable/face_not_verified.xml b/packages/SystemUI/res/drawable/face_not_verified.xml
@@ -91,7 +90,7 @@ index 000000000000..d63dacb1512e
 +      android:pathData="M12,16c-1.48,0 -2.75,-0.81 -3.45,-2L6.88,14c0.8,2.05 2.79,3.5 5.12,3.5s4.32,-1.45 5.12,-3.5h-1.67c-0.69,1.19 -1.97,2 -3.45,2zM11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM12,20c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8z"/>
 +</vector>
 diff --git a/packages/SystemUI/res/layout/keyguard_bottom_area.xml b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
-index 66c57fc2a9ac..b4636aa31df2 100644
+index 6d7ce0623817..a1e2a65bef21 100644
 --- a/packages/SystemUI/res/layout/keyguard_bottom_area.xml
 +++ b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
 @@ -30,6 +30,17 @@
@@ -108,195 +107,15 @@ index 66c57fc2a9ac..b4636aa31df2 100644
 +            android:scaleType="fitCenter"
 +            android:tint="#FFFFFF"
 +            android:visibility="gone" />
-+            
++
          <com.android.systemui.statusbar.phone.KeyguardIndicationTextView
              android:id="@id/keyguard_indication_text"
              android:layout_width="match_parent"
-diff --git a/packages/SystemUI/res/values-de/derp_strings.xml b/packages/SystemUI/res/values-de/derp_strings.xml
-new file mode 100644
-index 000000000000..27973fc3caba
---- /dev/null
-+++ b/packages/SystemUI/res/values-de/derp_strings.xml
-@@ -0,0 +1,174 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<!--
-+     Copyright (C) 2023 DerpFest
-+     SPDX-License-Identifier: Apache-2.0
-+-->
-+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-+
-+    <!-- Status bar - icons -->
-+    <string name="status_bar_icons_title">Statusleistensymbole</string>
-+
-+    <!-- Custom QS tiles -->
-+    <!-- Ambient display QS tile -->
-+    <string name="quick_settings_ambient_display_label">Ambient display</string>
-+    <string name="accessibility_quick_settings_ambient_display_off">Ambient display off.</string>
-+    <string name="accessibility_quick_settings_ambient_display_on">Ambient display on.</string>
-+
-+    <!-- AOD QS tile -->
-+    <string name="quick_settings_aod_label">AOD</string>
-+    <string name="quick_settings_aod_on_charge_label">AOD beim Laden</string>
-+    <string name="quick_settings_aod_off_label">AOD aus</string>
-+
-+    <!-- Caffeine QS tile -->
-+    <string name="quick_settings_caffeine_label">Caffeine</string>
-+    <string name="accessibility_quick_settings_caffeine_off">Caffeine off.</string>
-+    <string name="accessibility_quick_settings_caffeine_on">Caffeine on.</string>
-+
-+    <!-- Compass QS Tile -->
-+    <string name="quick_settings_compass_label">Kompass</string>
-+    <string name="quick_settings_compass_value"><xliff:g id="Grad">%1$.0f</xliff:g>\u00b0 <xliff:g id="Richtung">%2$s</xliff:g></string>
-+    <string name="quick_settings_compass_init">Vorbereitung läuft \u2026</string>
-+    <string name="quick_settings_compass_N">N</string>
-+    <string name="quick_settings_compass_NE">NO</string>
-+    <string name="quick_settings_compass_E">O</string>
-+    <string name="quick_settings_compass_SE">SO</string>
-+    <string name="quick_settings_compass_S">S</string>
-+    <string name="quick_settings_compass_SW">SW</string>
-+    <string name="quick_settings_compass_W">W</string>
-+    <string name="quick_settings_compass_NW">NW</string>
-+
-+    <!-- DataSwitch Tile -->
-+    <string name="qs_data_switch_label">SIM-Karte für mobile Daten wechseln</string>
-+    <string name="qs_data_switch_toast_0">Currently no SIM card is inserted</string>
-+    <string name="qs_data_switch_toast_1">Currently only one SIM card is inserted</string>
-+    <string name="qs_data_switch_text_1">SIM 1</string>
-+    <string name="qs_data_switch_text_2">SIM 2</string>
-+    <string name="qs_data_switch_changed_1">Switched data card to SIM 1.</string>
-+    <string name="qs_data_switch_changed_2">Switched data card to SIM 2.</string>
-+
-+    <!-- Heads up QS tile -->
-+    <string name="quick_settings_heads_up_label">Pop-up</string>
-+    <string name="accessibility_quick_settings_heads_up_off">Pop-up aus.</string>
-+    <string name="accessibility_quick_settings_heads_up_on">Pop-up an.</string>
-+
-+    <!-- PowerShare QS tile -->
-+    <string name="quick_settings_powershare_label">Battery Share</string>
-+    <string name="quick_settings_powershare_enabled_label">Battery Share ist aktiviert</string>
-+
-+    <!-- Reader mode QS tile -->
-+    <string name="quick_settings_reading_mode">Lesemodus</string>
-+    <string name="accessibility_quick_settings_reading_mode_on">Lesemodus an.</string>
-+    <string name="accessibility_quick_settings_reading_mode_off">Lesemodus aus.</string>
-+
-+    <!-- Sound QS Tile -->
-+    <string name="quick_settings_sound_label">Ton</string>
-+    <string name="quick_settings_sound_ring">Klingeln</string>
-+    <string name="quick_settings_sound_vibrate">Vibrieren</string>
-+    <string name="quick_settings_sound_silent">Still</string>
-+
-+    <!-- Sync QS tile -->
-+    <string name="quick_settings_sync_label">Synchronisation</string>
-+    <string name="accessibility_quick_settings_sync_off">Synchronisierung aus.</string>
-+    <string name="accessibility_quick_settings_sync_on">Synchronisierung an.</string>
-+
-+    <!-- USB tethering QS tile -->
-+    <string name="quick_settings_usb_tether_label">USB-Tethering</string>
-+
-+    <!-- VPN QS tile -->
-+    <string name="quick_settings_vpn_label">VPN</string>
-+    <string name="quick_settings_vpn_connect_dialog_title">Wird verbunden\u2026</string>
-+    <string name="vpn_credentials_hint">Bitte Zugangsdaten eingeben, um sich mit <xliff:g id="name">%s</xliff:g> zu verbinden</string>
-+    <string name="vpn_credentials_username">Benutzername</string>
-+    <string name="vpn_credentials_password">Passwort</string>
-+    <string name="vpn_credentials_dialog_connect">Verbinden</string>
-+
-+    <!-- VPN tethering QS tile -->
-+    <string name="vpn_tethering_label">VPN-Tethering</string>
-+    <string name="vpn_tethering_changed_off">VPN-Tethering aus.</string>
-+    <string name="vpn_tethering_changed_on">VPN-Tethering an.</string>
-+
-+    <!-- Name of the clock in status bar [CHAR LIMIT=30] -->
-+    <string name="clock">Uhr</string>
-+
-+    <!-- Label for area where tiles can be added to the qs panel -->
-+    <string name="drag_or_tap_to_add_tiles">Halten &amp; ziehen oder tippen zum Hinzufügen</string>
-+    <!-- Label for the area where tiles can be dragged in to remove -->
-+    <string name="drag_or_tap_to_remove_tiles">Halten &amp; ziehen oder tippen zum Entfernen</string>
-+
-+    <!-- Label for UI element which allows deleting the screenshot [CHAR LIMIT=30] -->
-+    <string name="screenshot_delete_label">Löschen</string>
-+
-+    <!-- Content description indicating that tapping the element will allow deleting the screenshot [CHAR LIMIT=NONE] -->
-+    <string name="screenshot_delete_description">Screenshot löschen</string>
-+
-+    <!-- Advanced restart menu -->
-+    <string name="global_action_restart_more">Neustarten\u2026</string>
-+    <string name="global_action_restart_system">System</string>
-+    <string name="global_action_restart_recovery">Recovery</string>
-+    <string name="global_action_restart_bootloader">Bootloader</string>
-+    <string name="global_action_restart_download">Download-Modus</string>
-+    <string name="global_action_restart_fastboot">Fastbootd</string>
-+    <string name="global_action_restart_progress">Neustarten\u2026</string>
-+    <string name="global_action_restart_recovery_progress">In Recovery-Modus neustarten\u2026</string>
-+    <string name="global_action_restart_bootloader_progress">In Bootloader-Modus neustarten\u2026</string>
-+    <string name="global_action_restart_download_progress">In Download-Modus neustarten\u2026</string>
-+    <string name="global_action_restart_fastboot_progress">Neustart in den Fastbootd-Modus\u2026</string>
-+
-+    <!-- Label for current user in power menu options dialog -->
-+    <string name="global_action_current_user">Aktuell</string>
-+    <string name="global_action_users">Benutzer</string>
-+    <string name="global_action_panic">Panikauslöser</string>
-+    <string name="global_action_restart_systemui">System-UI</string>
-+
-+    <!-- Navigation bar dpad -->
-+    <string name="accessibility_dpad_left">Cursor links</string>
-+    <string name="accessibility_dpad_right">Cursor rechts</string>
-+
-+     <!-- Data usage info in QS footer -->
-+    <string name="usage_data">heute verbraucht</string>
-+    <string name="usage_data_default_suffix">Mobildaten</string>
-+    <string name="usage_wifi_default_suffix">WLAN</string>
-+
-+    <!-- QuickSettings: InternetDialog: Summary for how many devices are connected to the hotspot [CHAR LIMIT=NONE] -->
-+     <string name="quick_settings_internet_hotspot_summary_num_devices">{count, plural,
-+        =1 {# Gerät verbunden}
-+        other {# Geräte verbunden}
-+    }</string>
-+
-+    <!-- Screen record delete action -->
-+    <!-- Label for notification action to delete a screen recording file [CHAR LIMIT=35] -->
-+    <string name="screenrecord_delete_label">Löschen</string>
-+    <!-- A toast message shown after successfully deleting a screen recording [CHAR LIMIT=NONE] -->
-+    <string name="screenrecord_delete_description">Bildschirmaufzeichnung gelöscht</string>
-+
-+    <!-- Screen record -->
-+    <string name="screenrecord_stopdot_label">Stopppunkt anzeigen</string>
-+    <string name="screenrecord_stopdot_summary">Gedrückthalten zum Verschieben</string>
-+    <string name="screenrecord_lowquality_label">Geringere Qualität</string>
-+    <string name="screenrecord_lowquality_summary">Zum Verringern der Dateigröße</string>
-+    <string name="screenrecord_longer_timeout_switch_label">Max. Dateigröße erhöhen</string>
-+    <string name="screenrecord_longer_timeout_switch_summary">Größe der Aufnahme auf 15 GB begrenzen</string>
-+    <string name="screenrecord_skip_time_label">Timer überspringen</string>
-+    <string name="screenrecord_skip_time_summary">Dreisekündige Wartezeit deaktivieren</string>
-+    <string name="screenrecord_hevc_switch_label">HEVC aktivieren</string>
-+    <string name="screenrecord_hevc_switch_summary">HEVC als Videocodec verwenden (effizienter)</string>
-+
-+    <!-- Bluetooth dialog -->
-+    <string name="turn_on_bluetooth">Bluetooth einschalten</string>
-+    <string name="bluetooth_is_off">Bluetooth ist deaktiviert</string>
-+    <string name="tap_a_device_to_connect">Gerät zum Verbinden / Trennen antippen</string>
-+
-+    <!-- Screenshot Tile -->
-+    <string name="screenshot_long_press">Gedrückt halten - ausgewählter Bereich</string>
-+
-+    <!-- SoundSearch Tile -->
-+    <string name="quick_settings_sound_search">Sound Search</string>
-+    <string name="quick_settings_sound_search_no_app">Das funktioniert leider nur, wenn eine Musikerkennungs‐App installiert ist.</string>
-+
-+    <!-- Language toggle tile -->
-+    <string name="quick_settings_locale_label">Sprache</string>
-+    <string name="quick_settings_locale_more_locales_toast">Bitte mehr als eine Sprache einrichten</string>
-+
-+    <!-- Face Unlock -->
-+    <string name="face_unlock_recognizing">Gesichtserkennung …</string>
-+</resources>
-diff --git a/packages/SystemUI/res/values-zh-rCN/lineage_strings.xml b/packages/SystemUI/res/values-zh-rCN/lineage_strings.xml
+diff --git a/packages/SystemUI/res/values-zh-rCN/extra_strings.xml b/packages/SystemUI/res/values-zh-rCN/extra_strings.xml
 new file mode 100644
 index 000000000000..195b531aacd5
 --- /dev/null
-+++ b/packages/SystemUI/res/values-zh-rCN/lineage_strings.xml
++++ b/packages/SystemUI/res/values-zh-rCN/extra_strings.xml
 @@ -0,0 +1,20 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<!--
@@ -318,11 +137,11 @@ index 000000000000..195b531aacd5
 +    <!-- Face Unlock -->
 +    <string name="face_unlock_recognizing">人脸识别中</string>
 +</resources>
-diff --git a/packages/SystemUI/res/values-zh-rHK/lineage_strings.xml b/packages/SystemUI/res/values-zh-rHK/lineage_strings.xml
+diff --git a/packages/SystemUI/res/values-zh-rHK/extra_strings.xml b/packages/SystemUI/res/values-zh-rHK/extra_strings.xml
 new file mode 100644
 index 000000000000..69ddfa7f1f83
 --- /dev/null
-+++ b/packages/SystemUI/res/values-zh-rHK/lineage_strings.xml
++++ b/packages/SystemUI/res/values-zh-rHK/extra_strings.xml
 @@ -0,0 +1,20 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<!--
@@ -344,11 +163,11 @@ index 000000000000..69ddfa7f1f83
 +    <!-- Face Unlock -->
 +    <string name="face_unlock_recognizing">人臉識別中</string>
 +</resources>
-diff --git a/packages/SystemUI/res/values-zh-rTW/lineage_strings.xml b/packages/SystemUI/res/values-zh-rTW/lineage_strings.xml
+diff --git a/packages/SystemUI/res/values-zh-rTW/extra_strings.xml b/packages/SystemUI/res/values-zh-rTW/extra_strings.xml
 new file mode 100644
 index 000000000000..69ddfa7f1f83
 --- /dev/null
-+++ b/packages/SystemUI/res/values-zh-rTW/lineage_strings.xml
++++ b/packages/SystemUI/res/values-zh-rTW/extra_strings.xml
 @@ -0,0 +1,20 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<!--
@@ -370,11 +189,11 @@ index 000000000000..69ddfa7f1f83
 +    <!-- Face Unlock -->
 +    <string name="face_unlock_recognizing">人臉識別中</string>
 +</resources>
-diff --git a/packages/SystemUI/res/values/lineage_strings.xml b/packages/SystemUI/res/values/lineage_strings.xml
+diff --git a/packages/SystemUI/res/values/extra_strings.xml b/packages/SystemUI/res/values/extra_strings.xml
 new file mode 100644
 index 000000000000..a7aa93dd34f9
 --- /dev/null
-+++ b/packages/SystemUI/res/values/lineage_strings.xml
++++ b/packages/SystemUI/res/values/extra_strings.xml
 @@ -0,0 +1,20 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<!--
@@ -397,12 +216,12 @@ index 000000000000..a7aa93dd34f9
 +    <string name="face_unlock_recognizing">Recognizing face...</string>
 +</resources>
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
-index feb02586a820..f41f9b11ffc1 100644
+index 08415cb5b0cb..e6e1cc64d40d 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
-@@ -104,6 +104,7 @@ import com.android.systemui.log.core.LogLevel;
- import com.android.systemui.plugins.FalsingManager;
+@@ -104,6 +104,7 @@ import com.android.systemui.plugins.FalsingManager;
  import com.android.systemui.plugins.statusbar.StatusBarStateController;
+ import com.android.systemui.res.R;
  import com.android.systemui.settings.UserTracker;
 +import com.android.systemui.statusbar.phone.FaceUnlockImageView;
  import com.android.systemui.statusbar.phone.KeyguardBypassController;
@@ -425,20 +244,20 @@ index feb02586a820..f41f9b11ffc1 100644
      private KeyguardIndicationTextView mTopIndicationView;
      private KeyguardIndicationTextView mLockScreenIndicationView;
      private final IBatteryStats mBatteryInfo;
-@@ -205,6 +209,8 @@ public class KeyguardIndicationController {
-     private final Set<Integer> mCoExFaceAcquisitionMsgIdsToShow;
+@@ -206,6 +210,8 @@ public class KeyguardIndicationController {
      private final FaceHelpMessageDeferral mFaceAcquiredMessageDeferral;
      private boolean mInited;
-+    
-+    private boolean mFaceDetectionRunning;
  
++    private boolean mFaceDetectionRunning;
++
      private KeyguardUpdateMonitorCallback mUpdateMonitorCallback;
  
+     private boolean mDozing;
 @@ -234,6 +240,15 @@ public class KeyguardIndicationController {
                  mBiometricErrorMessageToShowOnScreenOn = null;
              }
          }
-+        
++
 +        @Override
 +        public void onScreenTurnedOff() {
 +            if (mFaceDetectionRunning) {
@@ -470,19 +289,19 @@ index feb02586a820..f41f9b11ffc1 100644
          mTopIndicationView = indicationArea.findViewById(R.id.keyguard_indication_text);
          mLockScreenIndicationView = indicationArea.findViewById(
              R.id.keyguard_indication_text_bottom);
-@@ -852,6 +873,12 @@ public class KeyguardIndicationController {
-                 && TextUtils.equals(biometricMessageFollowUp, mBiometricMessageFollowUp)) {
+@@ -853,6 +874,12 @@ public class KeyguardIndicationController {
              return;
          }
-+        
+ 
 +        if (TextUtils.equals(biometricMessage, mContext.getString(R.string.keyguard_face_successful_unlock))) {
 +            mFaceIconView.setState(FaceUnlockImageView.State.SUCCESS);
 +        } else if (TextUtils.equals(biometricMessage, mContext.getString(R.string.keyguard_face_failed))) {
 +            mFaceIconView.setState(FaceUnlockImageView.State.NOT_VERIFIED);
 +        }
- 
++
          mBiometricMessage = biometricMessage;
          mBiometricMessageFollowUp = biometricMessageFollowUp;
+ 
 @@ -876,6 +903,25 @@ public class KeyguardIndicationController {
          }
      }
@@ -509,7 +328,7 @@ index feb02586a820..f41f9b11ffc1 100644
      /**
       * Hides transient indication.
       */
-@@ -1332,11 +1378,17 @@ public class KeyguardIndicationController {
+@@ -1328,11 +1374,17 @@ public class KeyguardIndicationController {
          @Override
          public void onBiometricRunningStateChanged(boolean running,
                  BiometricSourceType biometricSourceType) {
@@ -532,7 +351,7 @@ index feb02586a820..f41f9b11ffc1 100644
              }
          }
  
-@@ -1493,6 +1545,7 @@ public class KeyguardIndicationController {
+@@ -1487,6 +1539,7 @@ public class KeyguardIndicationController {
  
              if (mDozing) {
                  hideBiometricMessage();

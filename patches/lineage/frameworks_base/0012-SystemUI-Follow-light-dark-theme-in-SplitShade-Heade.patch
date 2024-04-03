@@ -11,26 +11,28 @@ Subject: [PATCH 12/19] SystemUI: Follow light/dark theme in SplitShade Header
 Co-authored-by: Col_or <col_or@qq.com>
 Change-Id: I5464039885197eeb43bd31b822bfcba7a1b08776
 ---
- .../systemui/shade/ShadeHeaderController.kt   | 27 +++++++++++++++++++
+ .../systemui/shade/ShadeHeaderController.kt   | 28 +++++++++++++++++++
  .../systemui/shade/carrier/ShadeCarrier.java  |  8 ++++++
  .../shade/carrier/ShadeCarrierGroup.java      | 16 +++++++++++
- 3 files changed, 51 insertions(+)
+ .../shade/ShadeHeaderControllerTest.kt        |  1 +
+ 4 files changed, 53 insertions(+)
 
 diff --git a/packages/SystemUI/src/com/android/systemui/shade/ShadeHeaderController.kt b/packages/SystemUI/src/com/android/systemui/shade/ShadeHeaderController.kt
-index 3c08389a7ca2..5cdd6f44d4a0 100644
+index 593260996198..5a5cb792c10b 100644
 --- a/packages/SystemUI/src/com/android/systemui/shade/ShadeHeaderController.kt
 +++ b/packages/SystemUI/src/com/android/systemui/shade/ShadeHeaderController.kt
-@@ -22,7 +22,10 @@ import android.annotation.IdRes
+@@ -21,8 +21,11 @@ import android.animation.AnimatorListenerAdapter
+ import android.annotation.IdRes
  import android.app.PendingIntent
  import android.app.StatusBarManager
- import android.content.Intent
 +import android.content.Context
+ import android.content.Intent
 +import android.content.res.ColorStateList
  import android.content.res.Configuration
 +import android.graphics.Color
+ import android.graphics.Insets
  import android.os.Bundle
  import android.os.Trace
- import android.os.Trace.TRACE_TAG_APP
 @@ -91,6 +94,7 @@ constructor(
      private val privacyIconsController: HeaderPrivacyIconsController,
      private val insetsProvider: StatusBarContentInsetsProvider,
@@ -39,7 +41,7 @@ index 3c08389a7ca2..5cdd6f44d4a0 100644
      private val variableDateViewControllerFactory: VariableDateViewController.Factory,
      @Named(SHADE_HEADER) private val batteryMeterViewController: BatteryMeterViewController,
      private val dumpManager: DumpManager,
-@@ -141,6 +145,7 @@ constructor(
+@@ -142,6 +146,7 @@ constructor(
      private var cutout: DisplayCutout? = null
      private var lastInsets: WindowInsets? = null
      private var nextAlarmIntent: PendingIntent? = null
@@ -47,7 +49,7 @@ index 3c08389a7ca2..5cdd6f44d4a0 100644
  
      private var qsDisabled = false
      private var visible = false
-@@ -283,6 +288,10 @@ constructor(
+@@ -288,6 +293,10 @@ constructor(
                  updateCarrierGroupPadding()
                  clock.onDensityOrFontScaleChanged()
              }
@@ -58,21 +60,19 @@ index 3c08389a7ca2..5cdd6f44d4a0 100644
          }
  
      private val nextAlarmCallback =
-@@ -335,6 +344,7 @@ constructor(
+@@ -341,6 +350,7 @@ constructor(
          demoModeController.addCallback(demoModeReceiver)
          statusBarIconController.addIconGroup(iconManager)
          nextAlarmController.addCallback(nextAlarmCallback)
 +        updateResources()
-         systemIcons.setOnHoverListener(
-             statusOverlayHoverListenerFactory.createListener(systemIcons)
+         systemIconsHoverContainer.setOnHoverListener(
+             statusOverlayHoverListenerFactory.createListener(systemIconsHoverContainer)
          )
-@@ -538,6 +548,23 @@ constructor(
+@@ -544,6 +554,24 @@ constructor(
          header.setPadding(padding, header.paddingTop, padding, header.paddingBottom)
          updateQQSPaddings()
          qsBatteryModeController.updateResources()
 +
-+        val fillColor = Utils.getColorAttrDefaultColor(context, android.R.attr.textColorPrimary)
-+        iconManager.setTint(fillColor)
 +        val textColor = Utils.getColorAttrDefaultColor(context, android.R.attr.textColorPrimary)
 +        val colorStateList = Utils.getColorAttr(context, android.R.attr.textColorPrimary)
 +        if (textColor != textColorPrimary) {
@@ -80,7 +80,10 @@ index 3c08389a7ca2..5cdd6f44d4a0 100644
 +                    android.R.attr.textColorSecondary)
 +            textColorPrimary = textColor
 +            if (iconManager != null) {
-+                iconManager.setTint(textColor)
++                iconManager.setTint(
++                    textColorPrimary,
++                    Utils.getColorAttrDefaultColor(context, android.R.attr.textColorPrimaryInverse),
++                )
 +            }
 +            clock.setTextColor(textColorPrimary)
 +            date.setTextColor(textColorPrimary)
@@ -91,7 +94,7 @@ index 3c08389a7ca2..5cdd6f44d4a0 100644
  
      private fun updateQQSPaddings() {
 diff --git a/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrier.java b/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrier.java
-index 8612cdf12c6e..5940677c4842 100644
+index 6ca0ad47a0a7..24a1e7cda1fd 100644
 --- a/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrier.java
 +++ b/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrier.java
 @@ -152,6 +152,14 @@ public class ShadeCarrier extends LinearLayout {
@@ -110,7 +113,7 @@ index 8612cdf12c6e..5940677c4842 100644
      View getRSSIView() {
          return mMobileGroup;
 diff --git a/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrierGroup.java b/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrierGroup.java
-index 68561d1cfd0f..97964c38a92f 100644
+index e84fb485829c..a5bcfeacff31 100644
 --- a/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrierGroup.java
 +++ b/packages/SystemUI/src/com/android/systemui/shade/carrier/ShadeCarrierGroup.java
 @@ -18,8 +18,11 @@ package com.android.systemui.shade.carrier;
@@ -145,6 +148,18 @@ index 68561d1cfd0f..97964c38a92f 100644
      public void updateTextAppearance(@StyleRes int resId) {
          FontSizeUtils.updateFontSizeFromStyle(getNoSimTextView(), resId);
          getCarrier1View().updateTextAppearance(resId);
+diff --git a/packages/SystemUI/tests/src/com/android/systemui/shade/ShadeHeaderControllerTest.kt b/packages/SystemUI/tests/src/com/android/systemui/shade/ShadeHeaderControllerTest.kt
+index 9fa173ab040a..de321ba62105 100644
+--- a/packages/SystemUI/tests/src/com/android/systemui/shade/ShadeHeaderControllerTest.kt
++++ b/packages/SystemUI/tests/src/com/android/systemui/shade/ShadeHeaderControllerTest.kt
+@@ -189,6 +189,7 @@ class ShadeHeaderControllerTest : SysuiTestCase() {
+                 privacyIconsController,
+                 insetsProvider,
+                 configurationController,
++                mockedContext,
+                 variableDateViewControllerFactory,
+                 batteryMeterViewController,
+                 dumpManager,
 -- 
 2.25.1
 

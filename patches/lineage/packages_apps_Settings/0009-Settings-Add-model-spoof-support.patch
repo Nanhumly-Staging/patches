@@ -1,4 +1,4 @@
-From d689c38fed956373033da573e12aac2213963d18 Mon Sep 17 00:00:00 2001
+From d9c2256ce8c9b445d22dee2bdfc78b8f975b3ef0 Mon Sep 17 00:00:00 2001
 From: Nanhumly <admin@warbler.cc>
 Date: Fri, 29 Dec 2023 11:28:21 +0000
 Subject: [PATCH] Settings: Add model spoof support
@@ -18,13 +18,13 @@ Signed-off-by: Nanhumly <admin@warbler.cc>
  create mode 100644 src/com/android/settings/applications/ModelspoofSettings.java
 
 diff --git a/res/values-zh-rCN/extra_strings.xml b/res/values-zh-rCN/extra_strings.xml
-index 67f75d2bd93..6b028e42a19 100644
+index d41f3f80839..bb7c4aa629c 100644
 --- a/res/values-zh-rCN/extra_strings.xml
 +++ b/res/values-zh-rCN/extra_strings.xml
-@@ -31,4 +31,19 @@
-     <!-- Strict standby -->
-     <string name="laboratory_strict_standby_policy_title">严格的应用待机策略</string>
-     <string name="laboratory_strict_standby_policy_summary">这将对“电池用量”受限的应用启用划卡即停，并对其施加更加严格的应用待机限制。所有限制将在电源连接时也保持执行。</string>
+@@ -27,4 +27,19 @@
+     <string name="status_bar_lyric_options_title">选项</string>
+     <string name="disguise_props_for_music_app_title">对音乐应用伪装设备</string>
+     <string name="disguise_props_for_music_app_summary">在一些音乐应用中伪装设备以支持状态栏歌词。更改此开关后，您必须重新启动相关应用才能使更改生效。</string>
 +
 +    <!-- Model spoof -->
 +    <string name="model_spoof_title">机型伪装</string>
@@ -42,13 +42,13 @@ index 67f75d2bd93..6b028e42a19 100644
 +    <string name="model_spoof_netflix_summary">将您的设备伪装成其它型号以获得 Netflix 认证。</string>
  </resources>
 diff --git a/res/values-zh-rHK/extra_strings.xml b/res/values-zh-rHK/extra_strings.xml
-index 521b8a2f088..5eb9c4bb074 100644
+index 40167ad2b8f..17b2549d1d5 100644
 --- a/res/values-zh-rHK/extra_strings.xml
 +++ b/res/values-zh-rHK/extra_strings.xml
-@@ -31,4 +31,19 @@
-     <!-- Strict standby -->
-     <string name="laboratory_strict_standby_policy_title">嚴格的應用程式待機策略</string>
-     <string name="laboratory_strict_standby_policy_summary">這將對「電池用量」受限的應用程式啟用劃卡即停，並對其施加更加嚴格的應用程式待機限制。所有限制將在電源連接時也保持執行。</string>
+@@ -27,4 +27,19 @@
+     <string name="status_bar_lyric_options_title">選項</string>
+     <string name="disguise_props_for_music_app_title">對音樂應用偽裝設備</string>
+     <string name="disguise_props_for_music_app_summary">在一些音樂應用中偽裝設備以支持狀態欄歌詞。更改此開關後，您必須重新啟動相關程式才能使更改生效。</string>
 +
 +    <!-- Model spoof -->
 +    <string name="model_spoof_title">機型偽裝</string>
@@ -66,13 +66,13 @@ index 521b8a2f088..5eb9c4bb074 100644
 +    <string name="model_spoof_netflix_summary">針對 Netflix 將您的設備偽裝成其他設備。</string>
  </resources>
 diff --git a/res/values-zh-rTW/extra_strings.xml b/res/values-zh-rTW/extra_strings.xml
-index 346648cffb1..af2883a3c0f 100644
+index 40167ad2b8f..17b2549d1d5 100644
 --- a/res/values-zh-rTW/extra_strings.xml
 +++ b/res/values-zh-rTW/extra_strings.xml
-@@ -31,4 +31,19 @@
-     <!-- Strict standby -->
-     <string name="laboratory_strict_standby_policy_title">嚴格的應用程式待機策略</string>
-     <string name="laboratory_strict_standby_policy_summary">這將對「電池用量」受限的應用程式啟用劃卡即停，並對其施加更加嚴格的應用程式待機限制。所有限制將在電源連接時也保持執行。</string>
+@@ -27,4 +27,19 @@
+     <string name="status_bar_lyric_options_title">選項</string>
+     <string name="disguise_props_for_music_app_title">對音樂應用偽裝設備</string>
+     <string name="disguise_props_for_music_app_summary">在一些音樂應用中偽裝設備以支持狀態欄歌詞。更改此開關後，您必須重新啟動相關程式才能使更改生效。</string>
 +
 +    <!-- Model spoof -->
 +    <string name="model_spoof_title">機型偽裝</string>
@@ -90,13 +90,13 @@ index 346648cffb1..af2883a3c0f 100644
 +    <string name="model_spoof_netflix_summary">針對 Netflix 將您的設備偽裝成其他設備。</string>
  </resources>
 diff --git a/res/values/extra_strings.xml b/res/values/extra_strings.xml
-index 7e78bdba20f..d6995db427a 100644
+index a2f174a4b1c..1f075c98054 100644
 --- a/res/values/extra_strings.xml
 +++ b/res/values/extra_strings.xml
-@@ -31,4 +31,19 @@
-     <!-- Strict standby -->
-     <string name="laboratory_strict_standby_policy_title">Strict standby policy</string>
-     <string name="laboratory_strict_standby_policy_summary">When dismissing from recents, this will force stop apps with restricted battery usage and impose stronger restrictions to them. Also, all app standby restrictions will be imposed even when device is charging.</string>
+@@ -27,4 +27,19 @@
+     <string name="status_bar_lyric_options_title">Options</string>
+     <string name="disguise_props_for_music_app_title">Disguise device for music apps</string>
+     <string name="disguise_props_for_music_app_summary">Disguise device in some music applications for support status bar lyric. After changing this toggle, you have to restart applications for the change to take effect.</string>
 +
 +    <!-- Model spoof -->
 +    <string name="model_spoof_title">Model spoof</string>
@@ -193,7 +193,7 @@ index 00000000000..5e4f53d887f
 +</PreferenceScreen>
 diff --git a/src/com/android/settings/applications/ModelspoofSettings.java b/src/com/android/settings/applications/ModelspoofSettings.java
 new file mode 100644
-index 00000000000..4a56abe894b
+index 00000000000..78a1e8939cb
 --- /dev/null
 +++ b/src/com/android/settings/applications/ModelspoofSettings.java
 @@ -0,0 +1,41 @@
