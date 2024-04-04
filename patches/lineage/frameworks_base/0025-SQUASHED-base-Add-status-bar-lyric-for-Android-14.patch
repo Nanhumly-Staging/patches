@@ -204,13 +204,13 @@ index 000000000000..1b6bc7ba19bb
 +</LinearLayout>
 \ No newline at end of file
 diff --git a/packages/SystemUI/res/values/lineage_dimens.xml b/packages/SystemUI/res/values/lineage_dimens.xml
-index e1998ce3d3ab..9ec698d52de1 100644
+index ca6e7db4c5b1..a860dfab083e 100644
 --- a/packages/SystemUI/res/values/lineage_dimens.xml
 +++ b/packages/SystemUI/res/values/lineage_dimens.xml
-@@ -21,4 +21,8 @@
+@@ -24,4 +24,8 @@
  
-     <!-- Largest size an avatar might need to be drawn in the power menu user picker -->
-     <dimen name="global_actions_avatar_size">24dp</dimen>
+     <!-- Screen Record -->
+     <dimen name="screenrecord_dot_size">48dp</dimen>
 +
 +    <!-- Lyric -->
 +    <dimen name="lyric_icon_margin_end">4dp</dimen>
