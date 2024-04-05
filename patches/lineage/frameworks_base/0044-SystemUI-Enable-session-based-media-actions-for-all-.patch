@@ -1,0 +1,34 @@
+From 9656b1d69af47231e34ae1a9b1fb3c0370ddf1e3 Mon Sep 17 00:00:00 2001
+From: Adithya R <gh0strider.2k18.reborn@gmail.com>
+Date: Sat, 20 Aug 2022 19:35:39 +0530
+Subject: [PATCH 4/8] SystemUI: Enable session-based media actions for all apps
+
+This is required to enable the new play/pause,
+previous and next track buttons in QS media player
+introduced in A13. By default, its only enabled for
+apps that target API 33:
+
+https://android.googlesource.com/platform/frameworks/base/+/85dddfc3c6d77105eec3e34099ee52928db7cb4a
+
+Test: Spotify, Telegram, Retro Music
+Change-Id: I3c3e071c6e39e748777b3fbec97c5182ad327acc
+---
+ packages/SystemUI/src/com/android/systemui/flags/Flags.kt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/flags/Flags.kt b/packages/SystemUI/src/com/android/systemui/flags/Flags.kt
+index b1d4587c20d8..a9cc45a38072 100644
+--- a/packages/SystemUI/src/com/android/systemui/flags/Flags.kt
++++ b/packages/SystemUI/src/com/android/systemui/flags/Flags.kt
+@@ -349,7 +349,7 @@ object Flags {
+     val MEDIA_TAP_TO_TRANSFER = releasedFlag("media_tap_to_transfer")
+ 
+     // TODO(b/254512502): Tracking Bug
+-    val MEDIA_SESSION_ACTIONS = unreleasedFlag("media_session_actions")
++    val MEDIA_SESSION_ACTIONS = releasedFlag("media_session_actions")
+ 
+     // TODO(b/254512654): Tracking Bug
+     @JvmField val DREAM_MEDIA_COMPLICATION = unreleasedFlag("dream_media_complication")
+-- 
+2.34.1
+
