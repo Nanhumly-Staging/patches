@@ -1,0 +1,135 @@
+From dbbde7538a6a9b3036a387ba51bdf5bfcc7ec980 Mon Sep 17 00:00:00 2001
+From: someone5678 <someone5678@users.noreply.github.com>
+Date: Thu, 7 Dec 2023 20:04:57 +0900
+Subject: [PATCH] Telephony: Apply Material You to exposed settings
+
+* Commit "Settings: Expose radio info (*#*#4636#*#*)"
+  exposes some of the Telephony's hidden components
+
+* Apply Material U to those settings for consistency
+
+Change-Id: I681d0881a19cfffa4cab00d5d86107a16a89a5dd
+Signed-off-by: someone5678 <someone5678@users.noreply.github.com>
+---
+ Android.bp                                    | 1 +
+ AndroidManifest.xml                           | 7 ++++---
+ res/layout/adn_list.xml                       | 1 +
+ res/layout/radio_info.xml                     | 5 +++--
+ res/values-night/parasite_colors.xml          | 4 ++++
+ res/values/parasite_colors.xml                | 4 ++++
+ src/com/android/phone/settings/RadioInfo.java | 2 ++
+ 7 files changed, 19 insertions(+), 5 deletions(-)
+ create mode 100644 res/values-night/parasite_colors.xml
+ create mode 100644 res/values/parasite_colors.xml
+
+diff --git a/Android.bp b/Android.bp
+index 7f5397fb3..5dc27aea9 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -41,6 +41,7 @@ android_app {
+         "com.android.phone.common-lib",
+         "guava",
+         "PlatformProperties",
++        "SettingsLib",
+         "modules-utils-fastxmlserializer",
+         "modules-utils-os",
+         "nist-sip",
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index ccdaf253b..aafefe3f8 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -227,11 +227,12 @@
+             </intent-filter>
+         </activity>
+ 
+-        <activity android:name="ADNList" />
++        <activity android:name="ADNList" 
++                  android:theme="@style/Theme.SubSettingsBase" />
+ 
+         <activity android:name="SimContacts"
+             android:label="@string/simContacts_title"
+-            android:theme="@style/SimImportTheme"
++            android:theme="@style/Theme.SubSettingsBase"
+             android:screenOrientation="portrait"
+             android:exported="true"
+             android:icon="@mipmap/ic_launcher_contacts">
+@@ -246,7 +247,7 @@
+         <activity android:name="com.android.phone.settings.fdn.FdnList"
+                 android:label="@string/fdnListLabel"
+                 android:exported="true"
+-                android:theme="@style/DialerSettingsLight">
++                android:theme="@style/Theme.SubSettingsBase">
+             <intent-filter>
+                 <action android:name="android.intent.action.VIEW" />
+                 <category android:name="android.intent.category.DEFAULT" />
+diff --git a/res/layout/adn_list.xml b/res/layout/adn_list.xml
+index 8bb3ebb14..8afa57c79 100644
+--- a/res/layout/adn_list.xml
++++ b/res/layout/adn_list.xml
+@@ -25,6 +25,7 @@
+         android:layout_height="match_parent"
+         android:text="@string/simContacts_emptyLoading"
+         android:textAppearance="?android:attr/textAppearanceLarge"
++        android:background="@color/settingslib_primary_device_default_settings"
+         android:gravity="center"
+     />
+ </merge>
+diff --git a/res/layout/radio_info.xml b/res/layout/radio_info.xml
+index 2db69ba42..73fff7e68 100644
+--- a/res/layout/radio_info.xml
++++ b/res/layout/radio_info.xml
+@@ -21,7 +21,8 @@
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:layoutDirection="locale"
+-    android:textDirection="locale">
++    android:textDirection="locale"
++    android:nestedScrollingEnabled="true">
+ 
+     <LinearLayout style="@style/info_layout"
+         android:descendantFocusability="beforeDescendants"
+@@ -36,7 +37,7 @@
+                 />
+ 
+         <Spinner android:id="@+id/phoneIndex"
+-                 android:layout_width="match_parent"
++                 android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                 />
+ 
+diff --git a/res/values-night/parasite_colors.xml b/res/values-night/parasite_colors.xml
+new file mode 100644
+index 000000000..66cd8cf69
+--- /dev/null
++++ b/res/values-night/parasite_colors.xml
+@@ -0,0 +1,4 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <color name="settingslib_primary_device_default_settings">@android:color/system_neutral1_900</color>
++</resources>
+diff --git a/res/values/parasite_colors.xml b/res/values/parasite_colors.xml
+new file mode 100644
+index 000000000..6b1889028
+--- /dev/null
++++ b/res/values/parasite_colors.xml
+@@ -0,0 +1,4 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <color name="settingslib_primary_device_default_settings">@android:color/system_neutral1_50</color>
++</resources>
+diff --git a/src/com/android/phone/settings/RadioInfo.java b/src/com/android/phone/settings/RadioInfo.java
+index 40269ebfe..195c0bf0d 100644
+--- a/src/com/android/phone/settings/RadioInfo.java
++++ b/src/com/android/phone/settings/RadioInfo.java
+@@ -120,6 +120,8 @@ import java.util.concurrent.ThreadPoolExecutor;
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.TimeoutException;
+ 
++import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
++
+ /**
+  * Radio Information Class
+  *
+-- 
+2.34.1
+

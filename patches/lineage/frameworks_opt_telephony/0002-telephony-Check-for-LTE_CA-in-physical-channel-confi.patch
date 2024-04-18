@@ -1,0 +1,55 @@
+From b1d429e4f2c6adf264543e0170978fe8b4ff7cd3 Mon Sep 17 00:00:00 2001
+From: Adithya R <gh0strider.2k18.reborn@gmail.com>
+Date: Sun, 20 Nov 2022 01:00:57 +0530
+Subject: [PATCH 2/4] telephony: Check for LTE_CA in physical channel config
+
+This fixes 4G+ indication on some carriers (such as Vi India
+with band 8+3 CA, Jio 4G with band 5+3 CA).
+
+Change-Id: I940e56bae334024a7c5588e509f94ab484ee4e10
+---
+ .../internal/telephony/NetworkTypeController.java  | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/src/java/com/android/internal/telephony/NetworkTypeController.java b/src/java/com/android/internal/telephony/NetworkTypeController.java
+index e6fb84e1f4..2e1e4c89ab 100644
+--- a/src/java/com/android/internal/telephony/NetworkTypeController.java
++++ b/src/java/com/android/internal/telephony/NetworkTypeController.java
+@@ -41,6 +41,7 @@ import android.text.TextUtils;
+ 
+ import com.android.internal.telephony.data.DataNetworkController.DataNetworkControllerCallback;
+ import com.android.internal.telephony.data.DataUtils;
++import com.android.internal.util.ArrayUtils;
+ import com.android.internal.util.IState;
+ import com.android.internal.util.IndentingPrintWriter;
+ import com.android.internal.util.State;
+@@ -521,7 +522,8 @@ public class NetworkTypeController extends StateMachine {
+     private @Annotation.OverrideNetworkType int getLteDisplayType() {
+         int value = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE;
+         if ((getDataNetworkType() == TelephonyManager.NETWORK_TYPE_LTE_CA
+-                || mServiceState.isUsingCarrierAggregation())
++                || mServiceState.isUsingCarrierAggregation()
++                || isLteCaInPhysicalChannelConfig())
+                 && IntStream.of(mServiceState.getCellBandwidths()).sum()
+                 > mLtePlusThresholdBandwidth) {
+             value = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA;
+@@ -532,6 +534,16 @@ public class NetworkTypeController extends StateMachine {
+         return value;
+     }
+ 
++    private boolean isLteCaInPhysicalChannelConfig() {
++        List<PhysicalChannelConfig> physicalChannelConfigList =
++                mPhone.getServiceStateTracker().getPhysicalChannelConfigList();
++        if (ArrayUtils.isEmpty(physicalChannelConfigList)) {
++            return false;
++        }
++        return physicalChannelConfigList.stream()
++                .anyMatch(item -> item.getNetworkType() == TelephonyManager.NETWORK_TYPE_LTE_CA);
++    }
++
+     private boolean isLteEnhancedAvailable() {
+         if (TextUtils.isEmpty(mLteEnhancedPattern)) {
+             return false;
+-- 
+2.34.1
+

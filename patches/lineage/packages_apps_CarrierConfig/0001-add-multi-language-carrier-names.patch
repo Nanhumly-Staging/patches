@@ -1,0 +1,123 @@
+From 3f1b535e578d526462fb50f8b3f15c4b22cf24d5 Mon Sep 17 00:00:00 2001
+From: cjybyjk <cjybyjk@zjnu.edu.cn>
+Date: Mon, 12 Jul 2021 04:30:47 +0000
+Subject: [PATCH] add multi-language carrier names
+
+Change-Id: I1edfd99503f918096c47861091c8a5e38aa076a1
+---
+ ...ier_config_carrierid_1435_China-Mobile.xml |  6 ++++++
+ ...ier_config_carrierid_1436_China-Unicom.xml |  6 ++++++
+ ...er_config_carrierid_2237_China-Telecom.xml |  6 ++++++
+ ...1\246\231\346\270\257-China-Mobile-HK.xml" |  5 +++++
+ .../DefaultCarrierConfigService.java          | 19 +++++++++++++++++++
+ 5 files changed, 42 insertions(+)
+
+diff --git a/assets/carrier_config_carrierid_1435_China-Mobile.xml b/assets/carrier_config_carrierid_1435_China-Mobile.xml
+index f5fae85..a4252a2 100644
+--- a/assets/carrier_config_carrierid_1435_China-Mobile.xml
++++ b/assets/carrier_config_carrierid_1435_China-Mobile.xml
+@@ -6,4 +6,10 @@
+     <boolean name="allow_hold_video_call_bool" value="false" />
+     <boolean name="support_video_conference_call_bool" value="false"/>
+     <int name="default_mtu_int" value="1400"/>
++    <boolean name="carrier_name_override_bool" value="true" />
++    <string name="carrier_name_string">China Mobile</string>
++    <string name="carrier_name_string_zh-CN">中国移动</string>
++    <string name="carrier_name_string_zh-TW">中國移動</string>
++    <string name="carrier_name_string_bo-CN">སྒུལ་འཕྲིན།</string>
++    <string name="carrier_name_string_ug-CN">كۆچمە</string>
+ </carrier_config>
+diff --git a/assets/carrier_config_carrierid_1436_China-Unicom.xml b/assets/carrier_config_carrierid_1436_China-Unicom.xml
+index dcef691..5f60a2a 100644
+--- a/assets/carrier_config_carrierid_1436_China-Unicom.xml
++++ b/assets/carrier_config_carrierid_1436_China-Unicom.xml
+@@ -1,4 +1,10 @@
+ <?xml version="1.0" encoding="utf-8" standalone="yes"?>
+ <carrier_config>
+     <boolean name="allow_emergency_numbers_in_call_log_bool" value="true"/>
++    <boolean name="carrier_name_override_bool" value="true" />
++    <string name="carrier_name_string">China Unicom</string>
++    <string name="carrier_name_string_zh-CN">中国联通</string>
++    <string name="carrier_name_string_zh-TW">中國聯通</string>
++    <string name="carrier_name_string_bo-CN">འབྲེལ་འཕྲིན།</string>
++    <string name="carrier_name_string_ug-CN">بىرلەشمە</string>
+ </carrier_config>
+diff --git a/assets/carrier_config_carrierid_2237_China-Telecom.xml b/assets/carrier_config_carrierid_2237_China-Telecom.xml
+index f398957..fff95a2 100644
+--- a/assets/carrier_config_carrierid_2237_China-Telecom.xml
++++ b/assets/carrier_config_carrierid_2237_China-Telecom.xml
+@@ -17,4 +17,10 @@
+         <item value="enterprise:20"/>
+         <item value="internet:20"/>
+     </string-array>
++    <boolean name="carrier_name_override_bool" value="true" />
++    <string name="carrier_name_string">China Telecom</string>
++    <string name="carrier_name_string_zh-CN">中国电信</string>
++    <string name="carrier_name_string_zh-TW">中國電信</string>
++    <string name="carrier_name_string_bo-CN">གློག་འཕྲིན།</string>
++    <string name="carrier_name_string_ug-CN">تېلېگراف</string>
+ </carrier_config>
+diff --git "a/assets/carrier_config_carrierid_767_\344\270\255\345\234\213\347\247\273\345\213\225\351\246\231\346\270\257-China-Mobile-HK.xml" "b/assets/carrier_config_carrierid_767_\344\270\255\345\234\213\347\247\273\345\213\225\351\246\231\346\270\257-China-Mobile-HK.xml"
+index 12f75e1..ed30fba 100644
+--- "a/assets/carrier_config_carrierid_767_\344\270\255\345\234\213\347\247\273\345\213\225\351\246\231\346\270\257-China-Mobile-HK.xml"
++++ "b/assets/carrier_config_carrierid_767_\344\270\255\345\234\213\347\247\273\345\213\225\351\246\231\346\270\257-China-Mobile-HK.xml"
+@@ -6,4 +6,9 @@
+         <item value="46007"/>
+         <item value="46008"/>
+     </string-array>
++    <boolean name="carrier_name_override_bool" value="true" />
++    <string name="carrier_name_string">China Mobile HK</string>
++    <string name="carrier_name_string_zh-CN">中国移动香港</string>
++    <string name="carrier_name_string_zh-TW">中國移動香港</string>
++    <string name="carrier_name_string_zh-HK">中國移動香港</string>
+ </carrier_config>
+diff --git a/src/com/android/carrierconfig/DefaultCarrierConfigService.java b/src/com/android/carrierconfig/DefaultCarrierConfigService.java
+index 768271f..a4a9559 100644
+--- a/src/com/android/carrierconfig/DefaultCarrierConfigService.java
++++ b/src/com/android/carrierconfig/DefaultCarrierConfigService.java
+@@ -23,6 +23,7 @@ import android.os.PersistableBundle;
+ import android.os.SystemProperties;
+ import android.service.carrier.CarrierIdentifier;
+ import android.service.carrier.CarrierService;
++import android.telephony.CarrierConfigManager;
+ import android.telephony.TelephonyManager;
+ import android.text.TextUtils;
+ import android.util.Log;
+@@ -32,6 +33,7 @@ import org.xmlpull.v1.XmlPullParserException;
+ import org.xmlpull.v1.XmlPullParserFactory;
+ 
+ import java.io.IOException;
++import java.util.Locale;
+ import java.util.regex.Matcher;
+ import java.util.regex.Pattern;
+ 
+@@ -187,9 +189,26 @@ public class DefaultCarrierConfigService extends CarrierService {
+             Log.e(TAG, e.toString());
+         }
+ 
++        getLocalCarrierName(config);
++
+         return config;
+     }
+ 
++    private void getLocalCarrierName(PersistableBundle config) {
++        Locale locale = getResources().getConfiguration().getLocales().get(0);
++        String localCarrierName = config.getString(CarrierConfigManager.KEY_CARRIER_NAME_STRING + "_" + locale.getLanguage() + "-" + locale.getCountry(), null);
++        if (TextUtils.isEmpty(localCarrierName)) {
++            String carrierNameWithLang = CarrierConfigManager.KEY_CARRIER_NAME_STRING + "_" + locale.getLanguage();
++            for (String key : config.keySet()) {
++                if (key.startsWith(carrierNameWithLang)) {
++                    localCarrierName = config.getString(key, null);
++                    break;
++                }
++            }
++        }
++        config.putString(CarrierConfigManager.KEY_CARRIER_NAME_STRING, localCarrierName);
++    }
++
+     /**
+      * Parses an XML document and returns a PersistableBundle.
+      *
+-- 
+2.34.1
+

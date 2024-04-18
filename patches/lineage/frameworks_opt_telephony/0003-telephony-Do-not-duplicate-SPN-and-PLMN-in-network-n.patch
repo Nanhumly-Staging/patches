@@ -1,0 +1,31 @@
+From 7c8800e4fcc89ed8e5f57cc2afb70763518be418 Mon Sep 17 00:00:00 2001
+From: Adithya R <gh0strider.2k18.reborn@gmail.com>
+Date: Sat, 6 Jan 2024 21:37:52 +0530
+Subject: [PATCH 3/4] telephony: Do not duplicate SPN and PLMN in network name
+
+Show only the PLMN if it already contains the SPN, insensitive of case.
+This avoids showing carrier name in statusbar twice, for example,
+"JIO - Jio" or "Jio True5G - JIO".
+
+Change-Id: I5ada2e255f37f71cd36f11f08359950f0adef558
+---
+ .../com/android/internal/telephony/ServiceStateTracker.java    | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/java/com/android/internal/telephony/ServiceStateTracker.java b/src/java/com/android/internal/telephony/ServiceStateTracker.java
+index d19e4cb359..901d46f69c 100644
+--- a/src/java/com/android/internal/telephony/ServiceStateTracker.java
++++ b/src/java/com/android/internal/telephony/ServiceStateTracker.java
+@@ -2803,7 +2803,8 @@ public class ServiceStateTracker extends Handler {
+             carrierName = plmn;
+             if (showSpn) {
+                 // Need to show both plmn and spn if both are not same.
+-                if (!Objects.equals(spn, plmn)) {
++                if (plmn != null && spn != null
++                        && !plmn.toLowerCase().contains(spn.toLowerCase())) {
+                     String separator = mPhone.getContext().getString(
+                             com.android.internal.R.string.kg_text_message_separator).toString();
+                     carrierName = new StringBuilder().append(carrierName).append(separator)
+-- 
+2.34.1
+
