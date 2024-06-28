@@ -1,4 +1,4 @@
-From b74c4d947a16b959a592e00cabe71ddf0ed3e548 Mon Sep 17 00:00:00 2001
+From 90d6d854de9068fb1e57444824d570ad03e54b22 Mon Sep 17 00:00:00 2001
 From: cjybyjk <cjybyjk@zjnu.edu.cn>
 Date: Fri, 29 Jul 2022 17:12:24 +0800
 Subject: [PATCH 2/3] [SQUASHED] base: Add status bar lyric for Android 14
@@ -40,7 +40,7 @@ Change-Id: I55d8299268a633de9b8b9fcb1d9ebab7dbe901fc
  packages/SystemUI/res/layout/status_bar.xml   |   2 +
  .../SystemUI/res/layout/status_bar_lyric.xml  |  55 +++++
  .../SystemUI/res/values/lineage_dimens.xml    |   4 +
- .../SystemUI/res/values/lineage_styles.xml    |  21 ++
+ .../SystemUI/res/values/lineage_styles.xml    |  22 ++
  .../src/com/android/systemui/Dependency.java  |   3 +
  .../systemui/statusbar/StatusBarIconView.java |   2 +-
  .../collection/NotifCollection.java           |   4 +
@@ -49,17 +49,17 @@ Change-Id: I55d8299268a633de9b8b9fcb1d9ebab7dbe901fc
  .../fragment/CollapsedStatusBarFragment.java  |  50 +++-
  .../android/systemui/tuner/TunerService.java  |   8 +
  .../android/systemui/util/LyricTextView.java  | 150 ++++++++++++
- 16 files changed, 551 insertions(+), 2 deletions(-)
+ 16 files changed, 552 insertions(+), 2 deletions(-)
  create mode 100644 packages/SystemUI/res/layout/status_bar_lyric.xml
  create mode 100644 packages/SystemUI/res/values/lineage_styles.xml
  create mode 100644 packages/SystemUI/src/com/android/systemui/statusbar/phone/LyricViewController.java
  create mode 100644 packages/SystemUI/src/com/android/systemui/util/LyricTextView.java
 
 diff --git a/core/api/current.txt b/core/api/current.txt
-index 9b5316fb79b5..d548cbb33d87 100644
+index 62980ed5bd69..c5d8dd716fdb 100644
 --- a/core/api/current.txt
 +++ b/core/api/current.txt
-@@ -6392,6 +6392,7 @@ package android.app {
+@@ -6487,6 +6487,7 @@ package android.app {
      field public static final String EXTRA_TITLE_BIG = "android.title.big";
      field public static final String EXTRA_VERIFICATION_ICON = "android.verificationIcon";
      field public static final String EXTRA_VERIFICATION_TEXT = "android.verificationText";
@@ -67,7 +67,7 @@ index 9b5316fb79b5..d548cbb33d87 100644
      field public static final int FLAG_AUTO_CANCEL = 16; // 0x10
      field public static final int FLAG_BUBBLE = 4096; // 0x1000
      field public static final int FLAG_FOREGROUND_SERVICE = 64; // 0x40
-@@ -6402,6 +6403,7 @@ package android.app {
+@@ -6497,6 +6498,7 @@ package android.app {
      field public static final int FLAG_NO_CLEAR = 32; // 0x20
      field public static final int FLAG_ONGOING_EVENT = 2; // 0x2
      field public static final int FLAG_ONLY_ALERT_ONCE = 8; // 0x8
@@ -76,10 +76,10 @@ index 9b5316fb79b5..d548cbb33d87 100644
      field public static final int FOREGROUND_SERVICE_DEFAULT = 0; // 0x0
      field public static final int FOREGROUND_SERVICE_DEFERRED = 2; // 0x2
 diff --git a/core/api/lint-baseline.txt b/core/api/lint-baseline.txt
-index f331e7f5fa84..8283b19b0a76 100644
+index 1b0da055038d..bbd836c70276 100644
 --- a/core/api/lint-baseline.txt
 +++ b/core/api/lint-baseline.txt
-@@ -1507,6 +1507,10 @@ UnflaggedApi: android.telephony.PhoneNumberUtils#isWpsCallNumber(String):
+@@ -1516,6 +1516,10 @@ UnflaggedApi: android.telephony.PhoneNumberUtils#isWpsCallNumber(String):
      New API must be flagged with @FlaggedApi: method android.telephony.PhoneNumberUtils.isWpsCallNumber(String)
  UnflaggedApi: android.telephony.TelephonyManager#PURCHASE_PREMIUM_CAPABILITY_RESULT_USER_DISABLED:
      New API must be flagged with @FlaggedApi: field android.telephony.TelephonyManager.PURCHASE_PREMIUM_CAPABILITY_RESULT_USER_DISABLED
@@ -91,10 +91,10 @@ index f331e7f5fa84..8283b19b0a76 100644
      New API must be flagged with @FlaggedApi: method android.text.DynamicLayout.Builder.setLineBreakConfig(android.graphics.text.LineBreakConfig)
  UnflaggedApi: android.text.DynamicLayout.Builder#setUseBoundsForWidth(boolean):
 diff --git a/core/java/android/app/Notification.java b/core/java/android/app/Notification.java
-index 7454e52b50ef..b0be5519b3e9 100644
+index 1129f9dbdfeb..657e9713aac2 100644
 --- a/core/java/android/app/Notification.java
 +++ b/core/java/android/app/Notification.java
-@@ -744,6 +744,10 @@ public class Notification implements Parcelable
+@@ -746,6 +746,10 @@ public class Notification implements Parcelable
       */
      @TestApi
      public static final int FLAG_USER_INITIATED_JOB = 0x00008000;
@@ -106,10 +106,10 @@ index 7454e52b50ef..b0be5519b3e9 100644
      /**
       * Bit to be bitwise-ored into the {@link #flags} field that should be
 diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
-index 285dbb7df4d1..4631a57a4ee1 100644
+index b6693fb22bb8..c00bbc12e315 100644
 --- a/core/java/android/provider/Settings.java
 +++ b/core/java/android/provider/Settings.java
-@@ -12159,6 +12159,18 @@ public final class Settings {
+@@ -12401,6 +12401,18 @@ public final class Settings {
           */
          public static final String LOCK_SCREEN_WEATHER_ENABLED = "lockscreen_weather_enabled";
  
@@ -218,12 +218,13 @@ index ca6e7db4c5b1..a860dfab083e 100644
  </resources>
 diff --git a/packages/SystemUI/res/values/lineage_styles.xml b/packages/SystemUI/res/values/lineage_styles.xml
 new file mode 100644
-index 000000000000..e88fd50a371f
+index 000000000000..9a9bf30e3a07
 --- /dev/null
 +++ b/packages/SystemUI/res/values/lineage_styles.xml
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,22 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<!-- Copyright (C) 2006 The Android Open Source Project
++<!--
++     Copyright (C) 2018-2022 The LineageOS Project
 +
 +     Licensed under the Apache License, Version 2.0 (the "License");
 +     you may not use this file except in compliance with the License.
@@ -244,10 +245,10 @@ index 000000000000..e88fd50a371f
 +    </style>
 +</resources>
 diff --git a/packages/SystemUI/src/com/android/systemui/Dependency.java b/packages/SystemUI/src/com/android/systemui/Dependency.java
-index 1a34cc4fc3a9..3923a584650f 100644
+index c7ee99c5f20a..dccc9bff6ef9 100644
 --- a/packages/SystemUI/src/com/android/systemui/Dependency.java
 +++ b/packages/SystemUI/src/com/android/systemui/Dependency.java
-@@ -46,6 +46,7 @@ import com.android.systemui.plugins.statusbar.StatusBarStateController;
+@@ -48,6 +48,7 @@ import com.android.systemui.plugins.statusbar.StatusBarStateController;
  import com.android.systemui.recents.OverviewProxyService;
  import com.android.systemui.settings.UserTracker;
  import com.android.systemui.statusbar.CommandQueue;
@@ -255,7 +256,7 @@ index 1a34cc4fc3a9..3923a584650f 100644
  import com.android.systemui.statusbar.NotificationMediaManager;
  import com.android.systemui.statusbar.NotificationRemoteInputManager;
  import com.android.systemui.statusbar.notification.collection.render.GroupExpansionManager;
-@@ -156,6 +157,7 @@ public class Dependency {
+@@ -160,6 +161,7 @@ public class Dependency {
      @Inject Lazy<NavigationBarController> mNavigationBarController;
      @Inject Lazy<StatusBarStateController> mStatusBarStateController;
      @Inject Lazy<NotificationMediaManager> mNotificationMediaManager;
@@ -263,7 +264,7 @@ index 1a34cc4fc3a9..3923a584650f 100644
      @Inject @Background Lazy<Looper> mBgLooper;
      @Inject @Main Lazy<Handler> mMainHandler;
      @Inject @Named(TIME_TICK_HANDLER_NAME) Lazy<Handler> mTimeTickHandler;
-@@ -213,6 +215,7 @@ public class Dependency {
+@@ -220,6 +222,7 @@ public class Dependency {
          mProviders.put(NavigationBarController.class, mNavigationBarController::get);
          mProviders.put(StatusBarStateController.class, mStatusBarStateController::get);
          mProviders.put(NotificationMediaManager.class, mNotificationMediaManager::get);
@@ -272,10 +273,10 @@ index 1a34cc4fc3a9..3923a584650f 100644
          mProviders.put(CommandQueue.class, mCommandQueue::get);
          mProviders.put(MediaOutputDialogFactory.class, mMediaOutputDialogFactory::get);
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/StatusBarIconView.java b/packages/SystemUI/src/com/android/systemui/statusbar/StatusBarIconView.java
-index 843a454d73a0..ac1a9bec861e 100644
+index bb6ee24b0ffe..f5f03aebb3c9 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/StatusBarIconView.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/StatusBarIconView.java
-@@ -469,7 +469,7 @@ public class StatusBarIconView extends AnimatedImageView implements StatusIconDi
+@@ -487,7 +487,7 @@ public class StatusBarIconView extends AnimatedImageView implements StatusIconDi
       * @return Drawable for this item, or null if the package or item could not
       *         be found
       */
@@ -570,7 +571,7 @@ index 000000000000..23858fa2664f
 +    }
 +}
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/fragment/CollapsedStatusBarFragment.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/fragment/CollapsedStatusBarFragment.java
-index d19f6e99cc5f..08ebe53d6204 100644
+index f3229ef2970c..8fb68168a2c1 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/fragment/CollapsedStatusBarFragment.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/fragment/CollapsedStatusBarFragment.java
 @@ -17,6 +17,7 @@ package com.android.systemui.statusbar.phone.fragment;
@@ -581,31 +582,31 @@ index d19f6e99cc5f..08ebe53d6204 100644
  import android.database.ContentObserver;
  import android.os.Bundle;
  import android.os.Parcelable;
-@@ -37,6 +38,7 @@ import androidx.core.animation.Animator;
+@@ -38,6 +39,7 @@ import androidx.core.animation.Animator;
  import com.android.app.animation.Interpolators;
  import com.android.app.animation.InterpolatorsAndroidX;
  import com.android.keyguard.KeyguardUpdateMonitor;
 +import com.android.systemui.Dependency;
  import com.android.systemui.Dumpable;
- import com.android.systemui.common.ui.ConfigurationState;
  import com.android.systemui.dagger.qualifiers.Main;
-@@ -60,6 +62,7 @@ import com.android.systemui.statusbar.notification.icon.ui.viewbinder.StatusBarN
- import com.android.systemui.statusbar.notification.icon.ui.viewmodel.NotificationIconContainerStatusBarViewModel;
+ import com.android.systemui.demomode.DemoMode;
+@@ -54,6 +56,7 @@ import com.android.systemui.statusbar.StatusBarState;
+ import com.android.systemui.statusbar.disableflags.DisableFlagsLogger.DisableState;
+ import com.android.systemui.statusbar.events.SystemStatusAnimationCallback;
+ import com.android.systemui.statusbar.events.SystemStatusAnimationScheduler;
++import com.android.systemui.statusbar.phone.LyricViewController;
+ import com.android.systemui.statusbar.notification.icon.ui.viewbinder.NotificationIconContainerStatusBarViewBinder;
  import com.android.systemui.statusbar.notification.shared.NotificationIconContainerRefactor;
  import com.android.systemui.statusbar.phone.ClockController;
-+import com.android.systemui.statusbar.phone.LyricViewController;
- import com.android.systemui.statusbar.phone.NotificationIconAreaController;
- import com.android.systemui.statusbar.phone.NotificationIconContainer;
- import com.android.systemui.statusbar.phone.PhoneStatusBarView;
-@@ -79,6 +82,7 @@ import com.android.systemui.statusbar.policy.KeyguardStateController;
- import com.android.systemui.statusbar.ui.SystemBarUtilsState;
+@@ -75,6 +78,7 @@ import com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.CollapsedStat
+ import com.android.systemui.statusbar.policy.KeyguardStateController;
  import com.android.systemui.statusbar.window.StatusBarWindowStateController;
  import com.android.systemui.statusbar.window.StatusBarWindowStateListener;
 +import com.android.systemui.tuner.TunerService;
  import com.android.systemui.util.CarrierConfigTracker;
  import com.android.systemui.util.CarrierConfigTracker.CarrierConfigChangedListener;
  import com.android.systemui.util.CarrierConfigTracker.DefaultDataSubscriptionChangedListener;
-@@ -104,7 +108,7 @@ import kotlin.Unit;
+@@ -102,7 +106,7 @@ import kotlinx.coroutines.DisposableHandle;
  @SuppressLint("ValidFragment")
  public class CollapsedStatusBarFragment extends Fragment implements CommandQueue.Callbacks,
          StatusBarStateController.StateListener,
@@ -614,7 +615,7 @@ index d19f6e99cc5f..08ebe53d6204 100644
  
      public static final String TAG = "CollapsedStatusBarFragment";
      private static final String EXTRA_PANEL_STATE = "panel_state";
-@@ -164,6 +168,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
+@@ -159,6 +163,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
      private final DemoModeController mDemoModeController;
  
      private ClockController mClockController;
@@ -622,7 +623,7 @@ index d19f6e99cc5f..08ebe53d6204 100644
  
      private List<String> mBlockedIcons = new ArrayList<>();
      private Map<Startable, Startable.State> mStartableStates = new ArrayMap<>();
-@@ -380,6 +385,9 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
+@@ -367,6 +372,9 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
          showClock(false);
          initOperatorName();
          initNotificationIconArea();
@@ -632,8 +633,8 @@ index d19f6e99cc5f..08ebe53d6204 100644
          mSystemEventAnimator = getSystemEventAnimator();
          mCarrierConfigTracker.addCallback(mCarrierConfigCallback);
          mCarrierConfigTracker.addDefaultDataSubscriptionChangedListener(mDefaultDataListener);
-@@ -474,6 +482,15 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
-         mDumpManager.unregisterDumpable(getClass().getSimpleName());
+@@ -467,6 +475,15 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
+         }
      }
  
 +    @Override
@@ -647,8 +648,8 @@ index d19f6e99cc5f..08ebe53d6204 100644
 +
      /** Initializes views related to the notification icon area. */
      public void initNotificationIconArea() {
-         ViewGroup notificationIconArea = mStatusBar.requireViewById(R.id.notification_icon_area);
-@@ -615,8 +632,14 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
+         Trace.beginSection("CollapsedStatusBarFragment#initNotifIconArea");
+@@ -604,8 +621,14 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
          // Hide notifications if the disable flag is set or we have an ongoing call.
          if (disableNotifications || hasOngoingCall) {
              hideNotificationIconArea(animate && !hasOngoingCall);
@@ -663,7 +664,7 @@ index d19f6e99cc5f..08ebe53d6204 100644
          }
  
          // Show the ongoing call chip only if there is an ongoing call *and* notification icons
-@@ -943,4 +966,29 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
+@@ -932,4 +955,29 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
              pw.decreaseIndent();
          }
      }

@@ -1,4 +1,4 @@
-From 34407acc0e5f387cf37dc12609e4339ef712562f Mon Sep 17 00:00:00 2001
+From 04d1b4143d8f6cf8e2c6d0028618af34dd967790 Mon Sep 17 00:00:00 2001
 From: Adithya R <gh0strider.2k18.reborn@gmail.com>
 Date: Wed, 14 Feb 2024 06:18:39 +0530
 Subject: [PATCH 2/2] audio: Remove UID check from per-app volume commands
@@ -13,10 +13,10 @@ Change-Id: Iecfd17207d8651846a919b33c39bdc2d7eb434ec
  1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
-index 3c7307769a..029f68f4e6 100644
+index b9b068265f..e131fa6946 100644
 --- a/services/audioflinger/AudioFlinger.cpp
 +++ b/services/audioflinger/AudioFlinger.cpp
-@@ -4896,9 +4896,7 @@ status_t AudioFlinger::onTransactWrapper(TransactionCode code,
+@@ -4876,9 +4876,7 @@ status_t AudioFlinger::onTransactWrapper(TransactionCode code,
          case TransactionCode::UPDATE_SECONDARY_OUTPUTS:
          case TransactionCode::SET_BLUETOOTH_VARIABLE_LATENCY_ENABLED:
          case TransactionCode::IS_BLUETOOTH_VARIABLE_LATENCY_ENABLED:
@@ -26,7 +26,7 @@ index 3c7307769a..029f68f4e6 100644
 +        case TransactionCode::SUPPORTS_BLUETOOTH_VARIABLE_LATENCY: {
              if (!isServiceUid(IPCThreadState::self()->getCallingUid())) {
                  ALOGW("%s: transaction %d received from PID %d unauthorized UID %d",
-                       __func__, code, IPCThreadState::self()->getCallingPid(),
+                       __func__, static_cast<int>(code),
 -- 
 2.25.1
 

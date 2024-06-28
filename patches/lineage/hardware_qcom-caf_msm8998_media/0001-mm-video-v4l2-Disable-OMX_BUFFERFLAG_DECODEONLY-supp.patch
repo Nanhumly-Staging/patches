@@ -1,0 +1,55 @@
+From 1decace75162b6e3608474f425a16c52b090d6ad Mon Sep 17 00:00:00 2001
+From: LuK1337 <priv.luk@gmail.com>
+Date: Mon, 6 May 2024 09:49:42 +0700
+Subject: [PATCH] mm-video-v4l2: Disable OMX_BUFFERFLAG_DECODEONLY support
+
+It appears that this doesn't work properly on Android U and
+coincidentally, SM8150 and newer platforms don't support it anymore
+either.
+
+Test: Play VP9 encoded YouTube video, notice that it's no longer stuck
+      after the playback runs out.
+Change-Id: I705014398bac677637157f239125933a7ff52a3e
+---
+ mm-video-v4l2/vidc/vdec/src/omx_vdec_v4l2.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/mm-video-v4l2/vidc/vdec/src/omx_vdec_v4l2.cpp b/mm-video-v4l2/vidc/vdec/src/omx_vdec_v4l2.cpp
+index edc9da95f..792610712 100644
+--- a/mm-video-v4l2/vidc/vdec/src/omx_vdec_v4l2.cpp
++++ b/mm-video-v4l2/vidc/vdec/src/omx_vdec_v4l2.cpp
+@@ -7983,7 +7983,9 @@ if (buffer->nFlags & QOMX_VIDEO_BUFFERFLAG_EOSEQ) {
+     buf.timestamp.tv_sec = frameinfo.timestamp / 1000000;
+     buf.timestamp.tv_usec = (frameinfo.timestamp % 1000000);
+     buf.flags |= (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) ? V4L2_QCOM_BUF_FLAG_CODECCONFIG: 0;
++#if NEED_TO_REVISIT
+     buf.flags |= (buffer->nFlags & OMX_BUFFERFLAG_DECODEONLY) ? V4L2_QCOM_BUF_FLAG_DECODEONLY: 0;
++#endif
+ 
+     if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+         DEBUG_PRINT_LOW("Increment codec_config buffer counter");
+@@ -9372,9 +9374,11 @@ int omx_vdec::async_message_process (void *context, void* message)
+                    if (v4l2_buf_ptr->flags & V4L2_QCOM_BUF_FLAG_EOSEQ) {
+                        omxhdr->nFlags |= QOMX_VIDEO_BUFFERFLAG_EOSEQ;
+                    }
++#if NEED_TO_REVISIT
+                    if (v4l2_buf_ptr->flags & V4L2_QCOM_BUF_FLAG_DECODEONLY) {
+                        omxhdr->nFlags |= OMX_BUFFERFLAG_DECODEONLY;
+                    }
++#endif
+                    if (v4l2_buf_ptr->flags & V4L2_MSM_BUF_FLAG_MBAFF) {
+                        omxhdr->nFlags |= QOMX_VIDEO_BUFFERFLAG_MBAFF;
+                    }
+@@ -9386,7 +9390,9 @@ int omx_vdec::async_message_process (void *context, void* message)
+ 
+                    if (omxhdr && (v4l2_buf_ptr->flags & V4L2_QCOM_BUF_DROP_FRAME) &&
+                            !omx->output_flush_progress &&
++#if NEED_TO_REVISIT
+                            !(v4l2_buf_ptr->flags & V4L2_QCOM_BUF_FLAG_DECODEONLY) &&
++#endif
+                            !(v4l2_buf_ptr->flags & V4L2_QCOM_BUF_FLAG_EOS)) {
+                        omx->time_stamp_dts.remove_time_stamp(
+                                omxhdr->nTimeStamp,
+-- 
+2.25.1
+

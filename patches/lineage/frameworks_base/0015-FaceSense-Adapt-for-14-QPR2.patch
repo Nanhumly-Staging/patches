@@ -1,0 +1,53 @@
+From 98d7e61823c9b114d2b5d9017e4f43ecfe03d736 Mon Sep 17 00:00:00 2001
+From: aswin7469 <aswinas@pixysos.com>
+Date: Tue, 19 Mar 2024 19:31:42 +0530
+Subject: [PATCH 04/10] FaceSense: Adapt for 14 QPR2
+
+Change-Id: I755e9d745bf68c7974cb215354602d291eafd333
+Signed-off-by: aswin7469 <aswinas@pixysos.com>
+---
+ .../sensors/face/sense/SenseProvider.java          | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
+index 58a516937ab8..a5c077b357c6 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
++++ b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
+@@ -63,7 +63,7 @@ import com.android.server.biometrics.log.BiometricLogger;
+ import com.android.server.biometrics.sensors.AcquisitionClient;
+ import com.android.server.biometrics.sensors.AuthenticationConsumer;
+ import com.android.server.biometrics.sensors.BaseClientMonitor;
+-import com.android.server.biometrics.sensors.BiometricNotificationImpl;
++import com.android.server.biometrics.AuthenticationStatsBroadcastReceiver;
+ import com.android.server.biometrics.sensors.BiometricNotificationUtils;
+ import com.android.server.biometrics.sensors.BiometricScheduler;
+ import com.android.server.biometrics.sensors.BiometricStateCallback;
+@@ -129,7 +129,7 @@ public class SenseProvider implements ServiceProvider {
+     @Nullable private IBiometricsFace mDaemon;
+     @NonNull private final HalResultController mHalResultController;
+     @NonNull private final BiometricContext mBiometricContext;
+-    @NonNull private final AuthenticationStatsCollector mAuthenticationStatsCollector;
++    @Nullable private AuthenticationStatsCollector mAuthenticationStatsCollector;
+     SparseArray<ISenseService> mServices;
+     // for requests that do not use biometric prompt
+     @NonNull private final AtomicLong mRequestCounter = new AtomicLong(0);
+@@ -371,8 +371,14 @@ public class SenseProvider implements ServiceProvider {
+         });
+         mCurrentUserId = ActivityManager.getCurrentUser();
+ 
+-        mAuthenticationStatsCollector = new AuthenticationStatsCollector(mContext,
+-                BiometricsProtoEnums.MODALITY_FACE, new BiometricNotificationImpl());
++        AuthenticationStatsBroadcastReceiver mBroadcastReceiver =
++                new AuthenticationStatsBroadcastReceiver(
++                        mContext,
++                        BiometricsProtoEnums.MODALITY_FACE,
++                        (AuthenticationStatsCollector collector) -> {
++                            Slog.d(TAG, "Initializing AuthenticationStatsCollector");
++                            mAuthenticationStatsCollector = collector;
++                        });
+ 
+         try {
+             ActivityManager.getService().registerUserSwitchObserver(mUserSwitchObserver, TAG);
+-- 
+2.25.1
+

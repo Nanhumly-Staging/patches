@@ -1,4 +1,4 @@
-From b73e28cc73d5ab7b8ab36279e8f83455eb472f8f Mon Sep 17 00:00:00 2001
+From 4e49232ebd7c4fc518d9a144b98ddd1b875a5053 Mon Sep 17 00:00:00 2001
 From: minaripenguin <minaripenguin@users.noreply.github.com>
 Date: Thu, 30 Nov 2023 10:39:01 +0800
 Subject: [PATCH 2/3] SystemUI: Implement face unlock recognition animation and
@@ -13,13 +13,13 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
  .../SystemUI/res/drawable/face_scanning.xml   |  10 ++
  .../SystemUI/res/drawable/face_success.xml    |  16 +++
  .../res/layout/keyguard_bottom_area.xml       |  11 ++
- .../res/values-zh-rCN/extra_strings.xml       |  20 ++++
- .../res/values-zh-rHK/extra_strings.xml       |  20 ++++
- .../res/values-zh-rTW/extra_strings.xml       |  20 ++++
- .../SystemUI/res/values/extra_strings.xml     |  20 ++++
+ .../res/values-zh-rCN/extra_strings.xml       |   4 +
+ .../res/values-zh-rHK/extra_strings.xml       |   4 +
+ .../res/values-zh-rTW/extra_strings.xml       |   4 +
+ .../SystemUI/res/values/extra_strings.xml     |   4 +
  .../KeyguardIndicationController.java         |  63 ++++++++++-
  .../statusbar/phone/FaceUnlockImageView.kt    | 102 ++++++++++++++++++
- 10 files changed, 293 insertions(+), 5 deletions(-)
+ 10 files changed, 229 insertions(+), 5 deletions(-)
  create mode 100644 packages/SystemUI/res/drawable/face_not_verified.xml
  create mode 100644 packages/SystemUI/res/drawable/face_scanning.xml
  create mode 100644 packages/SystemUI/res/drawable/face_success.xml
@@ -90,7 +90,7 @@ index 000000000000..d63dacb1512e
 +      android:pathData="M12,16c-1.48,0 -2.75,-0.81 -3.45,-2L6.88,14c0.8,2.05 2.79,3.5 5.12,3.5s4.32,-1.45 5.12,-3.5h-1.67c-0.69,1.19 -1.97,2 -3.45,2zM11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM12,20c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8z"/>
 +</vector>
 diff --git a/packages/SystemUI/res/layout/keyguard_bottom_area.xml b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
-index 6d7ce0623817..a1e2a65bef21 100644
+index e602d6c8848d..570d342f990a 100644
 --- a/packages/SystemUI/res/layout/keyguard_bottom_area.xml
 +++ b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
 @@ -30,6 +30,17 @@
@@ -107,119 +107,55 @@ index 6d7ce0623817..a1e2a65bef21 100644
 +            android:scaleType="fitCenter"
 +            android:tint="#FFFFFF"
 +            android:visibility="gone" />
-+
++            
          <com.android.systemui.statusbar.phone.KeyguardIndicationTextView
              android:id="@id/keyguard_indication_text"
              android:layout_width="match_parent"
 diff --git a/packages/SystemUI/res/values-zh-rCN/extra_strings.xml b/packages/SystemUI/res/values-zh-rCN/extra_strings.xml
 new file mode 100644
-index 000000000000..195b531aacd5
+index 000000000000..acd542f31711
 --- /dev/null
 +++ b/packages/SystemUI/res/values-zh-rCN/extra_strings.xml
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,4 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<!--
-+     Copyright (C) 2018-2022 The LineageOS Project
-+
-+     Licensed under the Apache License, Version 2.0 (the "License");
-+     you may not use this file except in compliance with the License.
-+     You may obtain a copy of the License at
-+
-+          http://www.apache.org/licenses/LICENSE-2.0
-+
-+     Unless required by applicable law or agreed to in writing, software
-+     distributed under the License is distributed on an "AS IS" BASIS,
-+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+     See the License for the specific language governing permissions and
-+     limitations under the License.
-+-->
-+<resources>
-+    <!-- Face Unlock -->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 +    <string name="face_unlock_recognizing">人脸识别中</string>
 +</resources>
 diff --git a/packages/SystemUI/res/values-zh-rHK/extra_strings.xml b/packages/SystemUI/res/values-zh-rHK/extra_strings.xml
 new file mode 100644
-index 000000000000..69ddfa7f1f83
+index 000000000000..1e94d59ee1a7
 --- /dev/null
 +++ b/packages/SystemUI/res/values-zh-rHK/extra_strings.xml
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,4 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<!--
-+     Copyright (C) 2018-2022 The LineageOS Project
-+
-+     Licensed under the Apache License, Version 2.0 (the "License");
-+     you may not use this file except in compliance with the License.
-+     You may obtain a copy of the License at
-+
-+          http://www.apache.org/licenses/LICENSE-2.0
-+
-+     Unless required by applicable law or agreed to in writing, software
-+     distributed under the License is distributed on an "AS IS" BASIS,
-+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+     See the License for the specific language governing permissions and
-+     limitations under the License.
-+-->
-+<resources>
-+    <!-- Face Unlock -->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 +    <string name="face_unlock_recognizing">人臉識別中</string>
 +</resources>
 diff --git a/packages/SystemUI/res/values-zh-rTW/extra_strings.xml b/packages/SystemUI/res/values-zh-rTW/extra_strings.xml
 new file mode 100644
-index 000000000000..69ddfa7f1f83
+index 000000000000..1e94d59ee1a7
 --- /dev/null
 +++ b/packages/SystemUI/res/values-zh-rTW/extra_strings.xml
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,4 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<!--
-+     Copyright (C) 2018-2022 The LineageOS Project
-+
-+     Licensed under the Apache License, Version 2.0 (the "License");
-+     you may not use this file except in compliance with the License.
-+     You may obtain a copy of the License at
-+
-+          http://www.apache.org/licenses/LICENSE-2.0
-+
-+     Unless required by applicable law or agreed to in writing, software
-+     distributed under the License is distributed on an "AS IS" BASIS,
-+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+     See the License for the specific language governing permissions and
-+     limitations under the License.
-+-->
-+<resources>
-+    <!-- Face Unlock -->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 +    <string name="face_unlock_recognizing">人臉識別中</string>
 +</resources>
 diff --git a/packages/SystemUI/res/values/extra_strings.xml b/packages/SystemUI/res/values/extra_strings.xml
 new file mode 100644
-index 000000000000..a7aa93dd34f9
+index 000000000000..06f98dc91935
 --- /dev/null
 +++ b/packages/SystemUI/res/values/extra_strings.xml
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,4 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<!--
-+     Copyright (C) 2018-2022 The LineageOS Project
-+
-+     Licensed under the Apache License, Version 2.0 (the "License");
-+     you may not use this file except in compliance with the License.
-+     You may obtain a copy of the License at
-+
-+          http://www.apache.org/licenses/LICENSE-2.0
-+
-+     Unless required by applicable law or agreed to in writing, software
-+     distributed under the License is distributed on an "AS IS" BASIS,
-+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+     See the License for the specific language governing permissions and
-+     limitations under the License.
-+-->
-+<resources>
-+    <!-- Face Unlock -->
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 +    <string name="face_unlock_recognizing">Recognizing face...</string>
 +</resources>
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
-index 08415cb5b0cb..e6e1cc64d40d 100644
+index 1ec86aea49d8..981ce6ca02b5 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
-@@ -104,6 +104,7 @@ import com.android.systemui.plugins.FalsingManager;
+@@ -109,6 +109,7 @@ import com.android.systemui.plugins.FalsingManager;
  import com.android.systemui.plugins.statusbar.StatusBarStateController;
  import com.android.systemui.res.R;
  import com.android.systemui.settings.UserTracker;
@@ -227,7 +163,7 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
  import com.android.systemui.statusbar.phone.KeyguardBypassController;
  import com.android.systemui.statusbar.phone.KeyguardIndicationTextView;
  import com.android.systemui.statusbar.phone.StatusBarKeyguardViewManager;
-@@ -141,6 +142,8 @@ public class KeyguardIndicationController {
+@@ -146,6 +147,8 @@ public class KeyguardIndicationController {
  
      private static final int MSG_SHOW_ACTION_TO_UNLOCK = 1;
      private static final int MSG_RESET_ERROR_MESSAGE_ON_SCREEN_ON = 2;
@@ -236,7 +172,7 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
      private static final long TRANSIENT_BIOMETRIC_ERROR_TIMEOUT = 1300;
      public static final long DEFAULT_HIDE_DELAY_MS =
              3500 + KeyguardIndicationTextView.Y_IN_DURATION;
-@@ -155,6 +158,7 @@ public class KeyguardIndicationController {
+@@ -160,6 +163,7 @@ public class KeyguardIndicationController {
      private final UserTracker mUserTracker;
      private final BouncerMessageInteractor mBouncerMessageInteractor;
      private ViewGroup mIndicationArea;
@@ -244,20 +180,20 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
      private KeyguardIndicationTextView mTopIndicationView;
      private KeyguardIndicationTextView mLockScreenIndicationView;
      private final IBatteryStats mBatteryInfo;
-@@ -206,6 +210,8 @@ public class KeyguardIndicationController {
+@@ -212,6 +216,8 @@ public class KeyguardIndicationController {
+     private final Set<Integer> mCoExFaceAcquisitionMsgIdsToShow;
      private final FaceHelpMessageDeferral mFaceAcquiredMessageDeferral;
      private boolean mInited;
- 
++    
 +    private boolean mFaceDetectionRunning;
-+
+ 
      private KeyguardUpdateMonitorCallback mUpdateMonitorCallback;
  
-     private boolean mDozing;
-@@ -234,6 +240,15 @@ public class KeyguardIndicationController {
+@@ -244,6 +250,15 @@ public class KeyguardIndicationController {
                  mBiometricErrorMessageToShowOnScreenOn = null;
              }
          }
-+
++        
 +        @Override
 +        public void onScreenTurnedOff() {
 +            if (mFaceDetectionRunning) {
@@ -269,7 +205,7 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
      };
      private boolean mFaceLockedOutThisAuthSession;
  
-@@ -321,6 +336,11 @@ public class KeyguardIndicationController {
+@@ -331,6 +346,11 @@ public class KeyguardIndicationController {
                      showActionToUnlock();
                  } else if (msg.what == MSG_RESET_ERROR_MESSAGE_ON_SCREEN_ON) {
                      mBiometricErrorMessageToShowOnScreenOn = null;
@@ -281,7 +217,7 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
                  }
              }
          };
-@@ -357,6 +377,7 @@ public class KeyguardIndicationController {
+@@ -367,6 +387,7 @@ public class KeyguardIndicationController {
  
      public void setIndicationArea(ViewGroup indicationArea) {
          mIndicationArea = indicationArea;
@@ -289,20 +225,20 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
          mTopIndicationView = indicationArea.findViewById(R.id.keyguard_indication_text);
          mLockScreenIndicationView = indicationArea.findViewById(
              R.id.keyguard_indication_text_bottom);
-@@ -853,6 +874,12 @@ public class KeyguardIndicationController {
+@@ -932,6 +953,12 @@ public class KeyguardIndicationController {
+                 && TextUtils.equals(biometricMessageFollowUp, mBiometricMessageFollowUp)) {
              return;
          }
- 
++        
 +        if (TextUtils.equals(biometricMessage, mContext.getString(R.string.keyguard_face_successful_unlock))) {
 +            mFaceIconView.setState(FaceUnlockImageView.State.SUCCESS);
 +        } else if (TextUtils.equals(biometricMessage, mContext.getString(R.string.keyguard_face_failed))) {
 +            mFaceIconView.setState(FaceUnlockImageView.State.NOT_VERIFIED);
 +        }
-+
-         mBiometricMessage = biometricMessage;
-         mBiometricMessageFollowUp = biometricMessageFollowUp;
  
-@@ -876,6 +903,25 @@ public class KeyguardIndicationController {
+         if (!isSuccessMessage
+                 && mBiometricMessageSource == FINGERPRINT
+@@ -970,6 +997,25 @@ public class KeyguardIndicationController {
          }
      }
  
@@ -328,7 +264,7 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
      /**
       * Hides transient indication.
       */
-@@ -1328,11 +1374,17 @@ public class KeyguardIndicationController {
+@@ -1448,11 +1494,17 @@ public class KeyguardIndicationController {
          @Override
          public void onBiometricRunningStateChanged(boolean running,
                  BiometricSourceType biometricSourceType) {
@@ -351,7 +287,7 @@ index 08415cb5b0cb..e6e1cc64d40d 100644
              }
          }
  
-@@ -1487,6 +1539,7 @@ public class KeyguardIndicationController {
+@@ -1612,6 +1664,7 @@ public class KeyguardIndicationController {
  
              if (mDozing) {
                  hideBiometricMessage();

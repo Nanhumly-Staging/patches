@@ -1,4 +1,4 @@
-From 2211ade785520d935d1198be3d8aa43ed7e49ae6 Mon Sep 17 00:00:00 2001
+From d1c9071c08a59cdf436210318128a0da175a2b0c Mon Sep 17 00:00:00 2001
 From: LibXZR <i@xzr.moe>
 Date: Sat, 11 Jun 2022 16:13:53 +0800
 Subject: [PATCH] [SQUASH]base: Add support for strict standby policy
@@ -30,7 +30,7 @@ Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
 
 Co-authored-by: Adithya R <gh0strider.2k18.reborn@gmail.com>
 [adapted to 14]
-Change-Id: I84f6448d434d4cc8817c7338c4db8dcb5a3ae4ff
+Change-Id: Idd1ff7f6795d4c92270935c18a340233d5ffe49a
 Signed-off-by: minaripenguin <minaripenguin@users.noreply.github.com>
 Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
 ---
@@ -43,10 +43,10 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
  6 files changed, 58 insertions(+), 1 deletion(-)
 
 diff --git a/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java b/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java
-index d002d69c320c..c99ef08c0210 100644
+index cb83966278bb..04a2bddc7a08 100644
 --- a/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java
 +++ b/apex/jobscheduler/service/java/com/android/server/AppStateTrackerImpl.java
-@@ -1130,6 +1130,9 @@ public class AppStateTrackerImpl implements AppStateTracker {
+@@ -1131,6 +1131,9 @@ public class AppStateTrackerImpl implements AppStateTracker {
              return false;
          }
          synchronized (mLock) {
@@ -56,7 +56,7 @@ index d002d69c320c..c99ef08c0210 100644
              final int appId = UserHandle.getAppId(uid);
              if (ArrayUtils.contains(mPowerExemptAllAppIds, appId)) {
                  return false;
-@@ -1174,6 +1177,9 @@ public class AppStateTrackerImpl implements AppStateTracker {
+@@ -1175,6 +1178,9 @@ public class AppStateTrackerImpl implements AppStateTracker {
              return false;
          }
          synchronized (mLock) {
@@ -66,7 +66,7 @@ index d002d69c320c..c99ef08c0210 100644
              final int appId = UserHandle.getAppId(uid);
              if (ArrayUtils.contains(mPowerExemptAllAppIds, appId)
                      || ArrayUtils.contains(mTempExemptAppIds, appId)) {
-@@ -1295,6 +1301,15 @@ public class AppStateTrackerImpl implements AppStateTracker {
+@@ -1296,6 +1302,15 @@ public class AppStateTrackerImpl implements AppStateTracker {
          }
      }
  
@@ -83,10 +83,10 @@ index d002d69c320c..c99ef08c0210 100644
       * Dump the internal state to the given PrintWriter. Can be included in the dump
       * of a binder service to be output on the shell command "dumpsys".
 diff --git a/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java b/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
-index 12f455ad0144..2cb494a3a1cb 100644
+index 19bc7160e16a..a38391d393d9 100644
 --- a/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
 +++ b/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
-@@ -1851,7 +1851,7 @@ public class AppStandbyController
+@@ -1853,7 +1853,7 @@ public class AppStandbyController
                      // shouldn't be surprising.
                      // Exclude REASON_SUB_FORCED_USER_FLAG_INTERACTION since the RESTRICTED bucket
                      // isn't directly visible in that flow.
@@ -96,10 +96,10 @@ index 12f455ad0144..2cb494a3a1cb 100644
                              != REASON_SUB_FORCED_USER_FLAG_INTERACTION) {
                          Toast.makeText(mContext,
 diff --git a/services/core/java/com/android/server/am/ActivityManagerService.java b/services/core/java/com/android/server/am/ActivityManagerService.java
-index 89b53aab1539..fa28457afef6 100644
+index 663ba8a38d77..19dc86dc1cd2 100644
 --- a/services/core/java/com/android/server/am/ActivityManagerService.java
 +++ b/services/core/java/com/android/server/am/ActivityManagerService.java
-@@ -20678,4 +20678,10 @@ public class ActivityManagerService extends IActivityManager.Stub
+@@ -20871,4 +20871,10 @@ public class ActivityManagerService extends IActivityManager.Stub
          }
          mOomAdjuster.mCachedAppOptimizer.binderError(debugPid, app, code, flags, err);
      }
@@ -143,10 +143,10 @@ index 3c56752d08e3..b52b800fc754 100644
              if (DEBUG_BROADCAST)  Slog.v(TAG_BROADCAST,
                      "Skipping delivery of ordered [" + mQueueName + "] "
 diff --git a/services/core/java/com/android/server/wm/ActivityTaskManagerService.java b/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
-index ad9ac201e22b..c6bde0731db5 100644
+index b26cddaccc04..117ac2d3acec 100644
 --- a/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
 +++ b/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
-@@ -282,6 +282,7 @@ import com.android.server.sdksandbox.SdkSandboxManagerLocal;
+@@ -286,6 +286,7 @@ import com.android.server.sdksandbox.SdkSandboxManagerLocal;
  import com.android.server.statusbar.StatusBarManagerInternal;
  import com.android.server.uri.NeededUriGrants;
  import com.android.server.uri.UriGrantsManagerInternal;
@@ -154,7 +154,7 @@ index ad9ac201e22b..c6bde0731db5 100644
  import com.android.server.wallpaper.WallpaperManagerInternal;
  import com.android.wm.shell.Flags;
  
-@@ -807,6 +808,8 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
+@@ -808,6 +809,8 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
      // Lineage sdk activity related helper
      private LineageActivityManager mLineageActivityManager;
  
@@ -163,16 +163,16 @@ index ad9ac201e22b..c6bde0731db5 100644
      private final class SettingObserver extends ContentObserver {
          private final Uri mFontScaleUri = Settings.System.getUriFor(FONT_SCALE);
          private final Uri mHideErrorDialogsUri = Settings.Global.getUriFor(HIDE_ERROR_DIALOGS);
-@@ -890,6 +893,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
-             // TODO(b/258792202) Cleanup once ASM is ready to launch
-             ActivitySecurityModelFeatureFlags.initialize(mContext.getMainExecutor(), pm);
+@@ -893,6 +896,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
+             mGrammaticalManagerInternal = LocalServices.getService(
+                     GrammaticalInflectionManagerInternal.class);
          }
 +        mAppStandbyInternal = LocalServices.getService(AppStandbyInternal.class);
      }
  
      public void onInitPowerManagement() {
 diff --git a/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java b/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
-index e59601c69cd8..eb6a6329996c 100644
+index 2cda1f55b038..b909be6fc59c 100644
 --- a/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
 +++ b/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
 @@ -38,6 +38,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
@@ -183,7 +183,7 @@ index e59601c69cd8..eb6a6329996c 100644
  import static android.content.pm.PackageManager.NOTIFY_PACKAGE_USE_ACTIVITY;
  import static android.content.pm.PackageManager.PERMISSION_DENIED;
  import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-@@ -210,6 +211,7 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
+@@ -212,6 +213,7 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
      private static final int REPORT_PIP_MODE_CHANGED_MSG = FIRST_SUPERVISOR_TASK_MSG + 15;
      private static final int START_HOME_MSG = FIRST_SUPERVISOR_TASK_MSG + 16;
      private static final int TOP_RESUMED_STATE_LOSS_TIMEOUT_MSG = FIRST_SUPERVISOR_TASK_MSG + 17;
@@ -191,7 +191,7 @@ index e59601c69cd8..eb6a6329996c 100644
  
      // Used to indicate that windows of activities should be preserved during the resize.
      static final boolean PRESERVE_WINDOWS = true;
-@@ -1786,6 +1788,11 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
+@@ -1793,6 +1795,11 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
      private void killTaskProcessesIfPossible(Task task) {
          task.mKillProcessesOnDestroyed = false;
          final String pkg = task.getBasePackageName();
@@ -203,7 +203,7 @@ index e59601c69cd8..eb6a6329996c 100644
          ArrayList<Object> procsToKill = null;
          ArrayMap<String, SparseArray<WindowProcessController>> pmap =
                  mService.mProcessNames.getMap();
-@@ -2588,6 +2595,17 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
+@@ -2595,6 +2602,17 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
                                  "restartActivityProcessTimeout");
                      }
                  } break;

@@ -1,0 +1,87 @@
+From 84c569c7bb47416e6d9b7b8c99ff474c875e64e6 Mon Sep 17 00:00:00 2001
+From: someone5678 <someone5678@users.noreply.github.com>
+Date: Sun, 16 Jun 2024 19:45:50 +0900
+Subject: [PATCH 09/10] fixup! Add Face Unlock with ParanoidSense
+
+Change-Id: I2d6671e12b235c8bd8cd0996b94a6972ba85762f
+---
+ .../sensors/face/sense/BiometricTestSessionImpl.java   |  2 +-
+ .../sensors/face/sense/FaceEnrollClient.java           |  5 +++--
+ .../biometrics/sensors/face/sense/SenseProvider.java   | 10 +++++++---
+ 3 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/services/core/java/com/android/server/biometrics/sensors/face/sense/BiometricTestSessionImpl.java b/services/core/java/com/android/server/biometrics/sensors/face/sense/BiometricTestSessionImpl.java
+index cdb4b46d0117..0ab778ec3095 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/face/sense/BiometricTestSessionImpl.java
++++ b/services/core/java/com/android/server/biometrics/sensors/face/sense/BiometricTestSessionImpl.java
+@@ -146,7 +146,7 @@ public class BiometricTestSessionImpl extends ITestSession.Stub {
+ 
+         mSenseProvider.scheduleEnroll(mSensorId, new Binder(), new byte[69], userId, mReceiver,
+                 mContext.getOpPackageName(), new int[0] /* disabledFeatures */,
+-                null /* previewSurface */, false /* debugConsent */);
++                null /* previewSurface */, false /* debugConsent */, null);
+     }
+ 
+     @android.annotation.EnforcePermission(android.Manifest.permission.TEST_BIOMETRIC)
+diff --git a/services/core/java/com/android/server/biometrics/sensors/face/sense/FaceEnrollClient.java b/services/core/java/com/android/server/biometrics/sensors/face/sense/FaceEnrollClient.java
+index 38c011253302..662b3da9fd71 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/face/sense/FaceEnrollClient.java
++++ b/services/core/java/com/android/server/biometrics/sensors/face/sense/FaceEnrollClient.java
+@@ -57,9 +57,10 @@ public class FaceEnrollClient extends EnrollClient<ISenseService> {
+             @NonNull byte[] hardwareAuthToken, @NonNull String owner, long requestId,
+             @NonNull BiometricUtils<Face> utils, @NonNull int[] disabledFeatures, int timeoutSec,
+             @Nullable Surface previewSurface, int sensorId,
+-            @NonNull BiometricLogger logger, @NonNull BiometricContext biometricContext) {
++            @NonNull BiometricLogger logger, @NonNull BiometricContext biometricContext,
++            int enrollReason) {
+         super(context, lazyDaemon, token, listener, userId, hardwareAuthToken, owner, utils,
+-                timeoutSec, sensorId, false /* shouldVibrate */, logger, biometricContext);
++                timeoutSec, sensorId, false /* shouldVibrate */, logger, biometricContext, enrollReason);
+         setRequestId(requestId);
+         mDisabledFeatures = Arrays.copyOf(disabledFeatures, disabledFeatures.length);
+         mEnrollIgnoreList = getContext().getResources()
+diff --git a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
+index a5c077b357c6..c0a7aae053da 100644
+--- a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
++++ b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
+@@ -37,6 +37,7 @@ import android.hardware.biometrics.ITestSessionCallback;
+ import android.hardware.biometrics.face.V1_0.IBiometricsFace;
+ import android.hardware.face.Face;
+ import android.hardware.face.FaceAuthenticateOptions;
++import android.hardware.face.FaceEnrollOptions;
+ import android.hardware.face.FaceSensorPropertiesInternal;
+ import android.hardware.face.IFaceServiceReceiver;
+ import android.os.Binder;
+@@ -388,7 +389,7 @@ public class SenseProvider implements ServiceProvider {
+     }
+ 
+     public SenseProvider(Context context, BiometricStateCallback biometricStateCallback, FaceSensorPropertiesInternal sensorProps, LockoutResetDispatcher lockoutResetDispatcher) {
+-        this(context, biometricStateCallback, sensorProps, lockoutResetDispatcher, new BiometricScheduler(context, TAG, 0, null));
++        this(context, biometricStateCallback, sensorProps, lockoutResetDispatcher, new BiometricScheduler<>(context, 0, null));
+     }
+ 
+     private synchronized ISenseService getDaemon() {
+@@ -559,7 +560,8 @@ public class SenseProvider implements ServiceProvider {
+     public long scheduleEnroll(int sensorId, @NonNull IBinder token,
+             @NonNull byte[] hardwareAuthToken, int userId, @NonNull IFaceServiceReceiver receiver,
+             @NonNull String opPackageName, @NonNull int[] disabledFeatures,
+-            @Nullable Surface previewSurface, boolean debugConsent) {
++            @Nullable Surface previewSurface, boolean debugConsent,
++            @NonNull FaceEnrollOptions options) {
+         final long id = mRequestCounter.incrementAndGet();
+         mHandler.post(() -> {
+             if (getDaemon() == null) {
+@@ -582,7 +584,9 @@ public class SenseProvider implements ServiceProvider {
+                     ENROLL_TIMEOUT_SEC, previewSurface, mSensorId,
+                     createLogger(BiometricsProtoEnums.ACTION_ENROLL,
+                             BiometricsProtoEnums.CLIENT_UNKNOWN),
+-                    mBiometricContext);
++                    mBiometricContext,
++                    mContext.getResources().getInteger(
++                                com.android.internal.R.integer.config_faceMaxTemplatesPerUser));
+ 
+             mScheduler.scheduleClientMonitor(client, new ClientMonitorCallback() {
+                 @Override
+-- 
+2.25.1
+

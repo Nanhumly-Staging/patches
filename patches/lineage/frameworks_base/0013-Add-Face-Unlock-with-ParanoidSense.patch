@@ -1,21 +1,14 @@
-From d071487ca8604887ca2021a28f25f16236ee4fd2 Mon Sep 17 00:00:00 2001
+From 2f57c664cf96158e9b9dfa9fb8bea735ab031247 Mon Sep 17 00:00:00 2001
 From: Chris Crump <chriscrawford893@gmail.com>
 Date: Sat, 25 Nov 2023 11:35:30 +0000
-Subject: [PATCH 1/3] base: Initial SenseProvider for FaceSense service
+Subject: [PATCH 02/10] Add Face Unlock with ParanoidSense
 
-Thanks to Tobi to figure out the fix for FaceSense needing a reboot to work after registering a face model.
-Also thanks to someone5678 for fixing compile on QPR1.
-
+Co-authored-by: Chris Crump <chriscrawford893@gmail.com>
 Co-authored-by: Adithya R <gh0strider.2k18.reborn@gmail.com>
-Co-authored-by: Tobias Merkel <stylogey@gmail.com>
-Co-authored-by: someone5678 <someone5678@users.noreply.github.com>
-Co-authored-by: aswin7469 <aswinas@pixysos.com>
-Change-Id: I1b83429a793a50fba292a38dbf5aa8a54ae5ace3
-Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
+Change-Id: I0f64c51af6459b02873841b7b5f443183ec4ad64
+Signed-off-by: Dmitrii <bankersenator@gmail.com>
 ---
  .../privacy/AppOpsPrivacyItemMonitor.kt       |    8 +
- .../phone/BiometricUnlockController.java      |    2 +-
- .../phone/KeyguardBypassController.kt         |   11 +-
  services/core/Android.bp                      |    1 +
  .../biometrics/sensors/face/FaceService.java  |   25 +
  .../face/sense/BiometricTestSessionImpl.java  |  227 ++++
@@ -30,10 +23,10 @@ Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
  .../face/sense/FaceRevokeChallengeClient.java |   55 +
  .../face/sense/FaceSetFeatureClient.java      |   93 ++
  .../sense/FaceUpdateActiveUserClient.java     |   84 ++
- .../sensors/face/sense/SenseProvider.java     | 1107 +++++++++++++++++
+ .../sensors/face/sense/SenseProvider.java     | 1101 +++++++++++++++++
  .../sensors/face/sense/SenseUtils.java        |   61 +
  .../sensors/face/sense/TestHal.java           |  144 +++
- 20 files changed, 2658 insertions(+), 5 deletions(-)
+ 18 files changed, 2644 insertions(+)
  create mode 100644 services/core/java/com/android/server/biometrics/sensors/face/sense/BiometricTestSessionImpl.java
  create mode 100644 services/core/java/com/android/server/biometrics/sensors/face/sense/FaceAuthenticationClient.java
  create mode 100644 services/core/java/com/android/server/biometrics/sensors/face/sense/FaceEnrollClient.java
@@ -76,102 +69,39 @@ index fedbdec113f8..cc4ce05a4282 100644
          val app = PrivacyApplication(appOpItem.packageName, appOpItem.uid)
          return PrivacyItem(type, app, appOpItem.timeStartedElapsed, appOpItem.isDisabled)
      }
-diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/BiometricUnlockController.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/BiometricUnlockController.java
-index 97fc35a062f4..1d4069ae3b3c 100644
---- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/BiometricUnlockController.java
-+++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/BiometricUnlockController.java
-@@ -618,7 +618,7 @@ public class BiometricUnlockController extends KeyguardUpdateMonitorCallback imp
-         final boolean unlockingAllowed =
-                 mUpdateMonitor.isUnlockingWithBiometricAllowed(isStrongBiometric);
-         final boolean deviceDreaming = mUpdateMonitor.isDreaming();
--        final boolean bypass = mKeyguardBypassController.getBypassEnabled()
-+        final boolean bypass = mKeyguardBypassController.getBypassEnabledBiometric()
-                 || mAuthController.isUdfpsFingerDown();
- 
-         logCalculateModeForPassiveAuth(unlockingAllowed, deviceInteractive, isKeyguardShowing,
-diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/KeyguardBypassController.kt b/packages/SystemUI/src/com/android/systemui/statusbar/phone/KeyguardBypassController.kt
-index a3d316b611a7..866bc590d33f 100644
---- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/KeyguardBypassController.kt
-+++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/KeyguardBypassController.kt
-@@ -107,6 +107,8 @@ open class KeyguardBypassController : Dumpable, StackScrollAlgorithm.BypassContr
-             notifyListeners()
-         }
- 
-+    var bypassEnabledBiometric: Boolean = false
-+
-     var bouncerShowing: Boolean = false
-     var altBouncerShowing: Boolean = false
-     var launchingAffordance: Boolean = false
-@@ -163,7 +165,7 @@ open class KeyguardBypassController : Dumpable, StackScrollAlgorithm.BypassContr
-                 com.android.internal.R.bool.config_faceAuthDismissesKeyguard)) 1 else 0
- 
-         tunerService.addTunable({ key, _ ->
--            bypassEnabled = tunerService.getValue(key, dismissByDefault) != 0
-+            bypassEnabledBiometric = tunerService.getValue(key, dismissByDefault) != 0
-         }, Settings.Secure.FACE_UNLOCK_DISMISSES_KEYGUARD)
- 
-         lockscreenUserManager.addUserChangedListener(
-@@ -200,8 +202,8 @@ open class KeyguardBypassController : Dumpable, StackScrollAlgorithm.BypassContr
-         biometricSourceType: BiometricSourceType,
-         isStrongBiometric: Boolean
-     ): Boolean {
--        if (biometricSourceType == BiometricSourceType.FACE && bypassEnabled) {
--            val can = canBypass()
-+        if (bypassEnabledBiometric) {
-+            val can = biometricSourceType != BiometricSourceType.FACE || canBypass()
-             if (!can && (isPulseExpanding || qsExpanded)) {
-                 pendingUnlock = PendingUnlock(biometricSourceType, isStrongBiometric)
-             }
-@@ -225,7 +227,7 @@ open class KeyguardBypassController : Dumpable, StackScrollAlgorithm.BypassContr
-      * If keyguard can be dismissed because of bypass.
-      */
-     fun canBypass(): Boolean {
--        if (bypassEnabled) {
-+        if (bypassEnabledBiometric) {
-             return when {
-                 bouncerShowing -> true
-                 altBouncerShowing -> true
-@@ -258,6 +260,7 @@ open class KeyguardBypassController : Dumpable, StackScrollAlgorithm.BypassContr
-             pw.println("  mPendingUnlock: $pendingUnlock")
-         }
-         pw.println("  bypassEnabled: $bypassEnabled")
-+        pw.println("  bypassEnabledBiometric: $bypassEnabledBiometric")
-         pw.println("  canBypass: ${canBypass()}")
-         pw.println("  bouncerShowing: $bouncerShowing")
-         pw.println("  altBouncerShowing: $altBouncerShowing")
 diff --git a/services/core/Android.bp b/services/core/Android.bp
-index ffe5f3402037..f1c8d413e1dd 100644
+index 5106e7695401..e676314d2e08 100644
 --- a/services/core/Android.bp
 +++ b/services/core/Android.bp
-@@ -205,6 +205,7 @@ java_library_static {
-         "com_android_wm_shell_flags_lib",
-         "com.android.server.utils_aconfig-java",
-         "service-jobscheduler-deviceidle.flags-aconfig-java",
+@@ -256,6 +256,7 @@ java_library_static {
+         "net_flags_lib",
+         "stats_flags_lib",
+         "core_os_flags_lib",
 +        "vendor.aospa.biometrics.face",
      ],
      javac_shard_size: 50,
      javacflags: [
 diff --git a/services/core/java/com/android/server/biometrics/sensors/face/FaceService.java b/services/core/java/com/android/server/biometrics/sensors/face/FaceService.java
-index 578d9dc2aede..79ad70987904 100644
+index 7ee2a7ababb3..1d41f52cad8c 100644
 --- a/services/core/java/com/android/server/biometrics/sensors/face/FaceService.java
 +++ b/services/core/java/com/android/server/biometrics/sensors/face/FaceService.java
-@@ -25,6 +25,7 @@ import android.annotation.Nullable;
- import android.app.ActivityManager;
+@@ -26,6 +26,7 @@ import android.app.ActivityManager;
  import android.content.Context;
+ import android.hardware.biometrics.AuthenticationStateListener;
  import android.hardware.biometrics.BiometricsProtoEnums;
 +import android.hardware.biometrics.SensorProperties;
  import android.hardware.biometrics.IBiometricSensorReceiver;
  import android.hardware.biometrics.IBiometricService;
  import android.hardware.biometrics.IBiometricServiceLockoutResetCallback;
-@@ -36,6 +37,7 @@ import android.hardware.biometrics.face.IFace;
- import android.hardware.biometrics.face.SensorProps;
- import android.hardware.face.Face;
+@@ -39,6 +40,7 @@ import android.hardware.face.Face;
  import android.hardware.face.FaceAuthenticateOptions;
+ import android.hardware.face.FaceEnrollOptions;
+ import android.hardware.face.FaceSensorConfigurations;
 +import android.hardware.face.FaceSensorProperties;
  import android.hardware.face.FaceSensorPropertiesInternal;
  import android.hardware.face.FaceServiceReceiver;
  import android.hardware.face.IFaceAuthenticatorsRegisteredCallback;
-@@ -67,6 +69,8 @@ import com.android.server.biometrics.sensors.LockoutResetDispatcher;
+@@ -73,6 +75,8 @@ import com.android.server.biometrics.sensors.LockoutResetDispatcher;
  import com.android.server.biometrics.sensors.LockoutTracker;
  import com.android.server.biometrics.sensors.face.aidl.FaceProvider;
  import com.android.server.biometrics.sensors.face.hidl.Face10;
@@ -180,7 +110,7 @@ index 578d9dc2aede..79ad70987904 100644
  
  import com.google.android.collect.Lists;
  
-@@ -682,6 +686,24 @@ public class FaceService extends SystemService {
+@@ -692,6 +696,24 @@ public class FaceService extends SystemService {
              return providers;
          }
  
@@ -205,7 +135,7 @@ index 578d9dc2aede..79ad70987904 100644
          @android.annotation.EnforcePermission(android.Manifest.permission.USE_BIOMETRIC_INTERNAL)
          public void registerAuthenticators(
                  @NonNull List<FaceSensorPropertiesInternal> hidlSensors) {
-@@ -698,8 +720,11 @@ public class FaceService extends SystemService {
+@@ -708,8 +730,11 @@ public class FaceService extends SystemService {
                          filteredInstances = filterAvailableHalInstances(hidlSensors, aidlSensors);
  
                  final List<ServiceProvider> providers = new ArrayList<>();
@@ -1595,10 +1525,10 @@ index 000000000000..08c075067082
 +}
 diff --git a/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
 new file mode 100644
-index 000000000000..a5c077b357c6
+index 000000000000..58a516937ab8
 --- /dev/null
 +++ b/services/core/java/com/android/server/biometrics/sensors/face/sense/SenseProvider.java
-@@ -0,0 +1,1107 @@
+@@ -0,0 +1,1101 @@
 +/*
 + * Copyright (C) 2020 The Android Open Source Project
 + * Copyright (C) 2023 Paranoid Android
@@ -1664,7 +1594,7 @@ index 000000000000..a5c077b357c6
 +import com.android.server.biometrics.sensors.AcquisitionClient;
 +import com.android.server.biometrics.sensors.AuthenticationConsumer;
 +import com.android.server.biometrics.sensors.BaseClientMonitor;
-+import com.android.server.biometrics.AuthenticationStatsBroadcastReceiver;
++import com.android.server.biometrics.sensors.BiometricNotificationImpl;
 +import com.android.server.biometrics.sensors.BiometricNotificationUtils;
 +import com.android.server.biometrics.sensors.BiometricScheduler;
 +import com.android.server.biometrics.sensors.BiometricStateCallback;
@@ -1730,7 +1660,7 @@ index 000000000000..a5c077b357c6
 +    @Nullable private IBiometricsFace mDaemon;
 +    @NonNull private final HalResultController mHalResultController;
 +    @NonNull private final BiometricContext mBiometricContext;
-+    @Nullable private AuthenticationStatsCollector mAuthenticationStatsCollector;
++    @NonNull private final AuthenticationStatsCollector mAuthenticationStatsCollector;
 +    SparseArray<ISenseService> mServices;
 +    // for requests that do not use biometric prompt
 +    @NonNull private final AtomicLong mRequestCounter = new AtomicLong(0);
@@ -1972,14 +1902,8 @@ index 000000000000..a5c077b357c6
 +        });
 +        mCurrentUserId = ActivityManager.getCurrentUser();
 +
-+        AuthenticationStatsBroadcastReceiver mBroadcastReceiver =
-+                new AuthenticationStatsBroadcastReceiver(
-+                        mContext,
-+                        BiometricsProtoEnums.MODALITY_FACE,
-+                        (AuthenticationStatsCollector collector) -> {
-+                            Slog.d(TAG, "Initializing AuthenticationStatsCollector");
-+                            mAuthenticationStatsCollector = collector;
-+                        });
++        mAuthenticationStatsCollector = new AuthenticationStatsCollector(mContext,
++                BiometricsProtoEnums.MODALITY_FACE, new BiometricNotificationImpl());
 +
 +        try {
 +            ActivityManager.getService().registerUserSwitchObserver(mUserSwitchObserver, TAG);

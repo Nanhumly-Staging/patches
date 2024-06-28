@@ -1,29 +1,30 @@
-From 64535f59aa4505daf2bae6798a5515bc5b1cd57d Mon Sep 17 00:00:00 2001
+From 26c31672d2d3a364ae781bef77a8cdd2af1f482e Mon Sep 17 00:00:00 2001
 From: cjybyjk <cjybyjk@zjnu.edu.cn>
 Date: Mon, 5 Sep 2022 04:14:52 +0000
-Subject: [PATCH 1/3] base: support per-app volume [2/3]
+Subject: [PATCH 1/4] base: support per-app volume [2/3]
 
-Change-Id: I2927258f25bd8ffd1ecc7f5350bf99cc55595aa1
 Signed-off-by: cjybyjk <cjybyjk@zjnu.edu.cn>
+Change-Id: Iaa97787d3820b4f6c23fda678ec3ffe711061c4f
 ---
- core/java/android/provider/Settings.java      | 12 +++
- core/jni/android_media_AudioSystem.cpp        | 99 ++++++++++++++++++-
- media/java/android/media/AppVolume.java       | 53 ++++++++++
- media/java/android/media/AudioManager.java    | 26 +++++
- media/java/android/media/AudioSystem.java     |  7 ++
- .../SystemUI/res/drawable/ic_app_volume.xml   | 25 +++++
- .../res/layout-land/volume_dialog.xml         | 18 ++++
- .../SystemUI/res/layout/volume_dialog.xml     | 18 ++++
- .../systemui/volume/VolumeDialogImpl.java     | 40 ++++++++
- 9 files changed, 297 insertions(+), 1 deletion(-)
+ core/java/android/provider/Settings.java      |  12 +++
+ core/jni/android_media_AudioSystem.cpp        | 100 ++++++++++++++++++
+ media/java/android/media/AppVolume.java       |  53 ++++++++++
+ media/java/android/media/AudioManager.java    |  26 +++++
+ media/java/android/media/AudioSystem.java     |   7 ++
+ .../SystemUI/res/drawable/ic_app_volume.xml   |  25 +++++
+ .../res/layout-land/volume_dialog.xml         |  18 ++++
+ .../SystemUI/res/layout/volume_dialog.xml     |  18 ++++
+ .../src/com/android/systemui/Dependency.java  |   6 ++
+ .../systemui/volume/VolumeDialogImpl.java     |  42 ++++++++
+ 10 files changed, 307 insertions(+)
  create mode 100644 media/java/android/media/AppVolume.java
  create mode 100644 packages/SystemUI/res/drawable/ic_app_volume.xml
 
 diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
-index 7f4aa2cbe251..8dafedcc37c4 100644
+index 783483d8e491..b6693fb22bb8 100644
 --- a/core/java/android/provider/Settings.java
 +++ b/core/java/android/provider/Settings.java
-@@ -5804,6 +5804,12 @@ public final class Settings {
+@@ -6217,6 +6217,12 @@ public final class Settings {
          @Readable
          public static final String VOLUME_KEY_CURSOR_CONTROL = "volume_key_cursor_control";
  
@@ -36,7 +37,7 @@ index 7f4aa2cbe251..8dafedcc37c4 100644
          /**
           * IMPORTANT: If you add a new public settings you also have to add it to
           * PUBLIC_SETTINGS below. If the new setting is hidden you have to add
-@@ -19801,6 +19807,12 @@ public final class Settings {
+@@ -20803,6 +20809,12 @@ public final class Settings {
          @SdkConstant(SdkConstant.SdkConstantType.ACTIVITY_INTENT_ACTION)
          public static final String ACTION_VOLUME =
                  "android.settings.panel.action.VOLUME";
@@ -50,18 +51,18 @@ index 7f4aa2cbe251..8dafedcc37c4 100644
  
      /**
 diff --git a/core/jni/android_media_AudioSystem.cpp b/core/jni/android_media_AudioSystem.cpp
-index e5f7009cc83ae..c45029f39fc0a 100644
+index df3b1d8faa8d..12a5190a9796 100644
 --- a/core/jni/android_media_AudioSystem.cpp
 +++ b/core/jni/android_media_AudioSystem.cpp
-@@ -25,6 +25,7 @@
- #include <android_os_Parcel.h>
- #include <audiomanager/AudioManager.h>
- #include <jni.h>
-+#include <media/AppVolume.h>
+@@ -33,6 +33,7 @@
  #include <media/AudioContainers.h>
  #include <media/AudioPolicy.h>
  #include <media/AudioSystem.h>
-@@ -52,6 +53,9 @@
++#include <media/AppVolume.h>
+ #include <nativehelper/JNIHelp.h>
+ #include <nativehelper/ScopedLocalRef.h>
+ #include <nativehelper/ScopedPrimitiveArray.h>
+@@ -57,6 +58,9 @@
  #include "android_util_Binder.h"
  #include "core_jni_helpers.h"
  
@@ -70,8 +71,8 @@ index e5f7009cc83ae..c45029f39fc0a 100644
 +
  // ----------------------------------------------------------------------------
  
- using namespace android;
-@@ -866,6 +870,88 @@ android_media_AudioSystem_getMasterBalance(JNIEnv *env, jobject thiz)
+ namespace audio_flags = android::media::audiopolicy;
+@@ -890,6 +894,88 @@ android_media_AudioSystem_getMasterBalance(JNIEnv *env, jobject thiz)
      return balance;
  }
  
@@ -160,22 +161,23 @@ index e5f7009cc83ae..c45029f39fc0a 100644
  static jint
  android_media_AudioSystem_getPrimaryOutputSamplingRate(JNIEnv *env, jobject clazz)
  {
-@@ -3297,7 +3383,13 @@ static const JNINativeMethod gMethods[] =
+@@ -3518,6 +3604,15 @@ static const JNINativeMethod gMethods[] =
+          MAKE_JNI_NATIVE_METHOD("clearPreferredMixerAttributes",
+                                 "(Landroid/media/AudioAttributes;II)I",
                                  android_media_AudioSystem_clearPreferredMixerAttributes),
++         MAKE_JNI_NATIVE_METHOD("setAppVolume",
++                                "(Ljava/lang/String;F)I",
++                                android_media_AudioSystem_setAppVolume),
++         MAKE_JNI_NATIVE_METHOD("setAppMute",
++                                "(Ljava/lang/String;Z)I",
++                                android_media_AudioSystem_setAppMute),
++         MAKE_JNI_NATIVE_METHOD("listAppVolumes",
++                                "(Ljava/util/ArrayList;)I",
++                                android_media_AudioSystem_listAppVolumes),
           MAKE_AUDIO_SYSTEM_METHOD(supportsBluetoothVariableLatency),
           MAKE_AUDIO_SYSTEM_METHOD(setBluetoothVariableLatencyEnabled),
--         MAKE_AUDIO_SYSTEM_METHOD(isBluetoothVariableLatencyEnabled)};
-+         MAKE_AUDIO_SYSTEM_METHOD(isBluetoothVariableLatencyEnabled),
-+         MAKE_JNI_NATIVE_METHOD("setAppVolume", "(Ljava/lang/String;F)I",
-+                                android_media_AudioSystem_setAppVolume),
-+         MAKE_JNI_NATIVE_METHOD("setAppMute", "(Ljava/lang/String;Z)I",
-+                                android_media_AudioSystem_setAppMute),
-+         MAKE_JNI_NATIVE_METHOD("listAppVolumes", "(Ljava/util/ArrayList;)I",
-+                                android_media_AudioSystem_listAppVolumes)};
- 
- static const JNINativeMethod gEventHandlerMethods[] =
-         {MAKE_JNI_NATIVE_METHOD("native_setup", "(Ljava/lang/Object;)V",
-@@ -3548,6 +3640,11 @@ int register_android_media_AudioSystem(JNIEnv *env)
+          MAKE_AUDIO_SYSTEM_METHOD(isBluetoothVariableLatencyEnabled)};
+@@ -3801,6 +3896,11 @@ int register_android_media_AudioSystem(JNIEnv *env)
      gAudioMixerAttributesField.mMixerBehavior =
              GetFieldIDOrDie(env, audioMixerAttributesClass, "mMixerBehavior", "I");
  
@@ -189,7 +191,7 @@ index e5f7009cc83ae..c45029f39fc0a 100644
      RegisterMethodsOrDie(env, kClassPathName, gMethods, NELEM(gMethods));
 diff --git a/media/java/android/media/AppVolume.java b/media/java/android/media/AppVolume.java
 new file mode 100644
-index 0000000000000..fac8a02a60d55
+index 000000000000..fac8a02a60d5
 --- /dev/null
 +++ b/media/java/android/media/AppVolume.java
 @@ -0,0 +1,53 @@
@@ -247,10 +249,10 @@ index 0000000000000..fac8a02a60d55
 +    }
 +}
 diff --git a/media/java/android/media/AudioManager.java b/media/java/android/media/AudioManager.java
-index 3dfd5726455d9..8fd916eba2b11 100644
+index 6f7024ae76b4..558d447cddfa 100644
 --- a/media/java/android/media/AudioManager.java
 +++ b/media/java/android/media/AudioManager.java
-@@ -1135,6 +1135,32 @@ public void setMasterMute(boolean mute, int flags) {
+@@ -1140,6 +1140,32 @@ public class AudioManager {
          }
      }
  
@@ -284,10 +286,10 @@ index 3dfd5726455d9..8fd916eba2b11 100644
       * Returns the current ringtone mode.
       *
 diff --git a/media/java/android/media/AudioSystem.java b/media/java/android/media/AudioSystem.java
-index 46a0b9934376b..7d4d7c2b4c771 100644
+index 293c561f166c..853124c99eb8 100644
 --- a/media/java/android/media/AudioSystem.java
 +++ b/media/java/android/media/AudioSystem.java
-@@ -1828,6 +1828,13 @@ public static int getDevicesForStream(int stream) {
+@@ -1829,6 +1829,13 @@ public class AudioSystem
                  getDevicesForAttributes(attr, true /* forVolume */)));
      }
  
@@ -303,7 +305,7 @@ index 46a0b9934376b..7d4d7c2b4c771 100644
       *
 diff --git a/packages/SystemUI/res/drawable/ic_app_volume.xml b/packages/SystemUI/res/drawable/ic_app_volume.xml
 new file mode 100644
-index 0000000000000..55d4682dd983d
+index 000000000000..55d4682dd983
 --- /dev/null
 +++ b/packages/SystemUI/res/drawable/ic_app_volume.xml
 @@ -0,0 +1,25 @@
@@ -333,7 +335,7 @@ index 0000000000000..55d4682dd983d
 +        android:fillColor="#FF000000"/>
 +</vector>
 diff --git a/packages/SystemUI/res/layout-land/volume_dialog.xml b/packages/SystemUI/res/layout-land/volume_dialog.xml
-index bac9fbb953429..536a4321a5d61 100644
+index bac9fbb95342..536a4321a5d6 100644
 --- a/packages/SystemUI/res/layout-land/volume_dialog.xml
 +++ b/packages/SystemUI/res/layout-land/volume_dialog.xml
 @@ -86,6 +86,24 @@
@@ -362,7 +364,7 @@ index bac9fbb953429..536a4321a5d61 100644
                      android:id="@+id/settings_container"
                      android:layout_width="wrap_content"
 diff --git a/packages/SystemUI/res/layout/volume_dialog.xml b/packages/SystemUI/res/layout/volume_dialog.xml
-index 9f3a13d793db4..165785287216b 100644
+index 9f3a13d793db..165785287216 100644
 --- a/packages/SystemUI/res/layout/volume_dialog.xml
 +++ b/packages/SystemUI/res/layout/volume_dialog.xml
 @@ -85,6 +85,24 @@
@@ -390,11 +392,59 @@ index 9f3a13d793db4..165785287216b 100644
                  <FrameLayout
                      android:id="@+id/settings_container"
                      android:layout_width="wrap_content"
+diff --git a/packages/SystemUI/src/com/android/systemui/Dependency.java b/packages/SystemUI/src/com/android/systemui/Dependency.java
+index 88535893b60c..c7ee99c5f20a 100644
+--- a/packages/SystemUI/src/com/android/systemui/Dependency.java
++++ b/packages/SystemUI/src/com/android/systemui/Dependency.java
+@@ -36,9 +36,11 @@ import com.android.systemui.dagger.qualifiers.Main;
+ import com.android.systemui.dump.DumpManager;
+ import com.android.systemui.flags.FeatureFlags;
+ import com.android.systemui.fragments.FragmentService;
++import com.android.systemui.media.dialog.MediaOutputDialogFactory;
+ import com.android.systemui.model.SysUiState;
+ import com.android.systemui.navigationbar.NavigationBarController;
+ import com.android.systemui.navigationbar.NavigationModeController;
++import com.android.systemui.plugins.ActivityStarter;
+ import com.android.systemui.plugins.DarkIconDispatcher;
+ import com.android.systemui.plugins.PluginManager;
+ import com.android.systemui.plugins.VolumeDialogController;
+@@ -132,6 +134,7 @@ public class Dependency {
+ 
+     @Inject DumpManager mDumpManager;
+ 
++    @Inject Lazy<ActivityStarter> mActivityStarter;
+     @Inject Lazy<BroadcastDispatcher> mBroadcastDispatcher;
+     @Inject Lazy<BluetoothController> mBluetoothController;
+     @Inject Lazy<FlashlightController> mFlashlightController;
+@@ -162,6 +165,7 @@ public class Dependency {
+     @Inject @Named(TIME_TICK_HANDLER_NAME) Lazy<Handler> mTimeTickHandler;
+     @Inject Lazy<SysUiState> mSysUiStateFlagsContainer;
+     @Inject Lazy<CommandQueue> mCommandQueue;
++    @Inject Lazy<MediaOutputDialogFactory> mMediaOutputDialogFactory;
+     @Inject Lazy<UiEventLogger> mUiEventLogger;
+     @Inject Lazy<StatusBarContentInsetsProvider> mContentInsetsProviderLazy;
+     @Inject Lazy<FeatureFlags> mFeatureFlagsLazy;
+@@ -188,6 +192,7 @@ public class Dependency {
+         mProviders.put(TIME_TICK_HANDLER, mTimeTickHandler::get);
+         mProviders.put(BG_LOOPER, mBgLooper::get);
+         mProviders.put(MAIN_HANDLER, mMainHandler::get);
++        mProviders.put(ActivityStarter.class, mActivityStarter::get);
+         mProviders.put(BroadcastDispatcher.class, mBroadcastDispatcher::get);
+         mProviders.put(BluetoothController.class, mBluetoothController::get);
+         mProviders.put(FlashlightController.class, mFlashlightController::get);
+@@ -217,6 +222,7 @@ public class Dependency {
+         mProviders.put(NotificationMediaManager.class, mNotificationMediaManager::get);
+         mProviders.put(SysUiState.class, mSysUiStateFlagsContainer::get);
+         mProviders.put(CommandQueue.class, mCommandQueue::get);
++        mProviders.put(MediaOutputDialogFactory.class, mMediaOutputDialogFactory::get);
+         mProviders.put(UiEventLogger.class, mUiEventLogger::get);
+         mProviders.put(FeatureFlags.class, mFeatureFlagsLazy::get);
+         mProviders.put(StatusBarContentInsetsProvider.class, mContentInsetsProviderLazy::get);
 diff --git a/packages/SystemUI/src/com/android/systemui/volume/VolumeDialogImpl.java b/packages/SystemUI/src/com/android/systemui/volume/VolumeDialogImpl.java
-index fa711ab3b7478..d2e0376951773 100644
+index 14b758978367..068599ccef93 100644
 --- a/packages/SystemUI/src/com/android/systemui/volume/VolumeDialogImpl.java
 +++ b/packages/SystemUI/src/com/android/systemui/volume/VolumeDialogImpl.java
-@@ -69,6 +69,7 @@
+@@ -69,6 +69,7 @@ import android.graphics.drawable.ColorDrawable;
  import android.graphics.drawable.Drawable;
  import android.graphics.drawable.LayerDrawable;
  import android.graphics.drawable.RotateDrawable;
@@ -402,26 +452,34 @@ index fa711ab3b7478..d2e0376951773 100644
  import android.media.AudioManager;
  import android.media.AudioSystem;
  import android.media.session.MediaController;
-@@ -267,6 +268,8 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
+@@ -125,6 +126,7 @@ import com.android.internal.jank.InteractionJankMonitor;
+ import com.android.internal.view.RotationPolicy;
+ import com.android.settingslib.Utils;
+ import com.android.settingslib.media.flags.Flags;
++import com.android.systemui.Dependency;
+ import com.android.systemui.Dumpable;
+ import com.android.systemui.Prefs;
+ import com.android.systemui.dump.DumpManager;
+@@ -270,6 +272,8 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
+     private CaptionsToggleImageButton mODICaptionsIcon;
+     private View mSettingsView;
      private ImageButton mSettingsIcon;
-     private View mExpandRowsView;
-     private ExpandableIndicator mExpandRows;
 +    private View mAppVolumeView;
 +    private ImageButton mAppVolumeIcon;
+     private View mExpandRowsView;
+     private ExpandableIndicator mExpandRows;
      private final List<VolumeRow> mRows = new ArrayList<>();
-     private ConfigurableTexts mConfigurableTexts;
-     private final SparseBooleanArray mDynamic = new SparseBooleanArray();
-@@ -774,6 +777,9 @@ public void onViewDetachedFromWindow(View v) {
-         mExpandRowsView = mDialog.findViewById(R.id.expandable_indicator_container);
-         mExpandRows = mDialog.findViewById(R.id.expandable_indicator);
+@@ -781,6 +785,9 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
+ 
+         mRoundedBorderBottom = mDialog.findViewById(R.id.rounded_border_bottom);
  
 +        mAppVolumeView = mDialog.findViewById(R.id.app_volume_container);
 +        mAppVolumeIcon = mDialog.findViewById(R.id.app_volume);
 +
-         if (isWindowGravityLeft()) {
-             ViewGroup container = mDialog.findViewById(R.id.volume_dialog_container);
-             setGravity(container, Gravity.LEFT);
-@@ -827,6 +833,7 @@ public void onViewDetachedFromWindow(View v) {
+         mExpandRowsView = mDialog.findViewById(R.id.expandable_indicator_container);
+         mExpandRows = mDialog.findViewById(R.id.expandable_indicator);
+ 
+@@ -837,6 +844,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
          updateRowsH(getActiveRow());
          initRingerH();
          initSettingsH(lockTaskModeState);
@@ -429,7 +487,7 @@ index fa711ab3b7478..d2e0376951773 100644
          initODICaptionsH();
          mAccessibility.init();
      }
-@@ -1419,6 +1426,38 @@ private void initSettingsH(int lockTaskModeState) {
+@@ -1433,6 +1441,39 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
          }
      }
  
@@ -457,9 +515,10 @@ index fa711ab3b7478..d2e0376951773 100644
 +        if (mAppVolumeIcon != null) {
 +            mAppVolumeIcon.setOnClickListener(v -> {
 +                Events.writeEvent(Events.EVENT_SETTINGS_CLICK);
++                Intent intent = new Intent(Settings.Panel.ACTION_APP_VOLUME);
 +                dismissH(DISMISS_REASON_SETTINGS_CLICKED);
-+                mMediaOutputDialogFactory.dismiss();
-+                mActivityStarter.startActivity(new Intent(Settings.Panel.ACTION_APP_VOLUME),
++                Dependency.get(MediaOutputDialogFactory.class).dismiss();
++                Dependency.get(ActivityStarter.class).startActivity(intent,
 +                        true /* dismissShade */);
 +            });
 +        }
@@ -468,7 +527,7 @@ index fa711ab3b7478..d2e0376951773 100644
      public void initRingerH() {
          if (mRingerIcon != null) {
              mRingerIcon.setAccessibilityLiveRegion(ACCESSIBILITY_LIVE_REGION_POLITE);
-@@ -1697,6 +1736,7 @@ private void showH(int reason, boolean keyguardLocked, int lockTaskModeState) {
+@@ -1711,6 +1752,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
          }
  
          initSettingsH(lockTaskModeState);

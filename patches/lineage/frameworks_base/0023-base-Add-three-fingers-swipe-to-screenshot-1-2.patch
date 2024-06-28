@@ -1,108 +1,108 @@
-From ce50d1e3c0567325de2d872defab6a15bb9bf082 Mon Sep 17 00:00:00 2001
+From 67ba5d9f7ebf7c80fec1c1a07e834c394d492adb Mon Sep 17 00:00:00 2001
 From: ghbhaha <ghbhaha@gmail.com>
-Date: Sun, 9 Aug 2015 01:23:33 +0800
+Date: Thu, 29 Oct 2020 21:55:41 -0300
 Subject: [PATCH] base: Add three-fingers-swipe to screenshot [1/2]
 
 The feature is ported from Oppo ColorOS.
 With the options on, users can swipe down
 on the screen to have a screenshot.
-Original smali port by: wuxianlin
 
-Change-Id: I87ed333f81e1259758ea899bf019061d8ab85fd0
+original smali port by: wuxianlin
 
 base: Improvements for swipe to screenshot
 
 * Cancel touch events when tap with three fingers
 
-* Dyrex2004: Fix typos (Screnshot -> Screenshot)
-
-Change-Id: I6e1228e4101aa357d1e26ca6d0db1c44428ef367
-
 base: SwipeToScreenshot: Import MIUI implementation
 
 Reverse engineered from Xiaomi/beryllium/beryllium:9/PKQ1.180729.001/9.2.25:user/release-keys
 
-Co-Authored-By: Tobias Merkel <stylogey@gmail.com>
-Change-Id: I1bfe2c7b1d4da62e9e84a99781dfb97768edb7e3
-Signed-off-by: Omkar Chandorkar <gotenksIN@aospa.co>
+Change-Id: I0b0ad1340a39f6644af30caebd1013a255fd8936
+Co-authored-by: jhenrique09 <jhenrique09.mcz@hotmail.com>
+Signed-off-by: Adithya R <gh0strider.2k18.reborn@gmail.com>
+Reviewed-on: https://review.statixos.com/c/android_frameworks_base/+/6719
+Reviewed-by: Sourajit Karmakar <sourajit@live.com>
+Tested-by: Sourajit Karmakar <sourajit@live.com>
+Reviewed-on: https://review.statixos.com/c/android_frameworks_base/+/7069
+Reviewed-by: Anay Wadhera <anay1018@gmail.com>
+Tested-by: Anay Wadhera <anay1018@gmail.com>
 ---
- core/java/android/app/IActivityManager.aidl   |   5 +
- core/java/android/provider/Settings.java      |   6 +
- core/java/android/view/ViewRootImpl.java      |  14 ++
+ core/java/android/app/IActivityManager.aidl   |   7 +
+ core/java/android/provider/Settings.java      |   7 +
+ core/java/android/view/ViewRootImpl.java      |  12 ++
  .../server/am/ActivityManagerService.java     |  40 +++++
- .../server/policy/PhoneWindowManager.java     |  26 +++
+ .../server/policy/PhoneWindowManager.java     |  30 ++++
  .../policy/SwipeToScreenshotListener.java     | 148 ++++++++++++++++++
- 6 files changed, 239 insertions(+)
+ 6 files changed, 244 insertions(+)
  create mode 100644 services/core/java/com/android/server/policy/SwipeToScreenshotListener.java
 
 diff --git a/core/java/android/app/IActivityManager.aidl b/core/java/android/app/IActivityManager.aidl
-index 260e9859c72d..c0d3c6e38b35 100644
+index 7a95720c1cf4..9ebdb228afe8 100644
 --- a/core/java/android/app/IActivityManager.aidl
 +++ b/core/java/android/app/IActivityManager.aidl
-@@ -940,6 +940,11 @@ interface IActivityManager {
- 
-     int checkPermissionForDevice(in String permission, int pid, int uid, int deviceId);
- 
+@@ -966,4 +966,11 @@ interface IActivityManager {
+      */
+     oneway void frozenBinderTransactionDetected(int debugPid, int code, int flags, int err);
+     int getBindingUidProcessState(int uid, in String callingPackage);
++
 +    /**
++     * @hide
++     *
 +     *  Should disable touch if three fingers to screen shot is active?
 +     */
 +    boolean isSwipeToScreenshotGestureActive();
-+
-     /**
-      * Notify AMS about binder transactions to frozen apps.
-      *
+ }
 diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
-index 4631a57a4ee1..bdcd7afb6176 100644
+index c00bbc12e315..1c6aecd67c00 100644
 --- a/core/java/android/provider/Settings.java
 +++ b/core/java/android/provider/Settings.java
-@@ -6111,6 +6111,12 @@ public final class Settings {
-         public static final String[] LEGACY_RESTORE_SETTINGS = {
-         };
+@@ -6146,6 +6146,13 @@ public final class Settings {
+         @Readable
+         public static final String EGG_MODE = "egg_mode";
  
 +        /**
-+         * Three Finger Gesture from Oppo
++         * Swipe to screenshot gesture
++         * Also known as Three Fingers Screenshot.
 +         * @hide
 +         */
 +        public static final String THREE_FINGER_GESTURE = "three_finger_gesture";
 +
          /**
-          * These are all public system settings
-          *
+          * Setting to determine whether or not to show the battery percentage in the status bar.
+          *    0 - Don't show percentage
 diff --git a/core/java/android/view/ViewRootImpl.java b/core/java/android/view/ViewRootImpl.java
-index e83488e2689e..e98618b31ad4 100644
+index a7cb1696e668..fb6e2523f1f7 100644
 --- a/core/java/android/view/ViewRootImpl.java
 +++ b/core/java/android/view/ViewRootImpl.java
-@@ -7424,6 +7424,11 @@ public final class ViewRootImpl implements ViewParent,
+@@ -7552,6 +7552,10 @@ public final class ViewRootImpl implements ViewParent,
                  mLastClickToolType = event.getToolType(event.getActionIndex());
              }
  
 +            if (event.getPointerCount() == 3 && isSwipeToScreenshotGestureActive()) {
 +                event.setAction(MotionEvent.ACTION_CANCEL);
-+                Log.d("SwipeToScreenShot", "canceling motionEvent because of threeGesture detecting");
 +            }
 +
              mAttachInfo.mUnbufferedDispatchRequested = false;
              mAttachInfo.mHandlingPointerEvent = true;
              // If the event was fully handled by the handwriting initiator, then don't dispatch it
-@@ -12279,4 +12284,13 @@ public final class ViewRootImpl implements ViewParent,
-     void setBackKeyCallbackForWindowlessWindow(@NonNull Predicate<KeyEvent> callback) {
-         mWindowlessBackKeyCallback = callback;
+@@ -12616,4 +12620,12 @@ public final class ViewRootImpl implements ViewParent,
+             mHasIdledMessage = true;
+         }
      }
 +
 +    private boolean isSwipeToScreenshotGestureActive() {
 +        try {
 +            return ActivityManager.getService().isSwipeToScreenshotGestureActive();
 +        } catch (RemoteException e) {
-+            Log.e("SwipeToScreenshot", "isSwipeToScreenshotGestureActive exception", e);
 +            return false;
 +        }
 +    }
  }
 diff --git a/services/core/java/com/android/server/am/ActivityManagerService.java b/services/core/java/com/android/server/am/ActivityManagerService.java
-index fa28457afef6..72e0f225d0b6 100644
+index 19dc86dc1cd2..1c53ba359cb7 100644
 --- a/services/core/java/com/android/server/am/ActivityManagerService.java
 +++ b/services/core/java/com/android/server/am/ActivityManagerService.java
-@@ -1727,6 +1727,10 @@ public class ActivityManagerService extends IActivityManager.Stub
+@@ -1744,6 +1744,10 @@ public class ActivityManagerService extends IActivityManager.Stub
  
      static final HostingRecord sNullHostingRecord =
              new HostingRecord(HostingRecord.HOSTING_TYPE_EMPTY);
@@ -113,7 +113,7 @@ index fa28457afef6..72e0f225d0b6 100644
      /**
       * Used to notify activity lifecycle events.
       */
-@@ -2536,6 +2540,7 @@ public class ActivityManagerService extends IActivityManager.Stub
+@@ -2560,6 +2564,7 @@ public class ActivityManagerService extends IActivityManager.Stub
          mEnableModernQueue = false;
          mBroadcastQueues = injector.getBroadcastQueues(this);
          mComponentAliasResolver = new ComponentAliasResolver(this);
@@ -121,7 +121,7 @@ index fa28457afef6..72e0f225d0b6 100644
      }
  
      // Note: This method is invoked on the main thread but may need to attach various
-@@ -2645,6 +2650,7 @@ public class ActivityManagerService extends IActivityManager.Stub
+@@ -2669,6 +2674,7 @@ public class ActivityManagerService extends IActivityManager.Stub
          mPendingStartActivityUids = new PendingStartActivityUids();
          mTraceErrorLogger = new TraceErrorLogger();
          mComponentAliasResolver = new ComponentAliasResolver(this);
@@ -129,7 +129,7 @@ index fa28457afef6..72e0f225d0b6 100644
      }
  
      public void setSystemServiceManager(SystemServiceManager mgr) {
-@@ -8712,6 +8718,7 @@ public class ActivityManagerService extends IActivityManager.Stub
+@@ -8806,6 +8812,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                      com.android.internal.R.bool.config_multiuserDelayUserDataLocking);
              mUserController.setInitialConfig(userSwitchUiEnabled, maxRunningUsers,
                      delayUserDataLocking);
@@ -137,7 +137,7 @@ index fa28457afef6..72e0f225d0b6 100644
          }
          mAppErrors.loadAppsNotReportingCrashesFromConfig(res.getString(
                  com.android.internal.R.string.config_appsNotReportingCrashes));
-@@ -20662,6 +20669,39 @@ public class ActivityManagerService extends IActivityManager.Stub
+@@ -20721,6 +20728,32 @@ public class ActivityManagerService extends IActivityManager.Stub
          }
      }
  
@@ -167,28 +167,35 @@ index fa28457afef6..72e0f225d0b6 100644
 +        }
 +    }
 +
-+    @Override
+     @Override
+     public boolean isAppFreezerSupported() {
+         final long token = Binder.clearCallingIdentity();
+@@ -20870,6 +20903,13 @@ public class ActivityManagerService extends IActivityManager.Stub
+             app = mPidsSelfLocked.get(debugPid);
+         }
+         mOomAdjuster.mCachedAppOptimizer.binderError(debugPid, app, code, flags, err);
++
++    }
++
 +    public boolean isSwipeToScreenshotGestureActive() {
 +        synchronized (this) {
 +            return mIsSwipeToScreenshotEnabled && SystemProperties.getBoolean("sys.android.screenshot", false);
 +        }
-+    }
-+
-     /**
-      * Deal with binder transactions to frozen apps.
-      *
+     }
+ 
+     public boolean shouldSkipBootCompletedBroadcastForPackage(ApplicationInfo info) {
 diff --git a/services/core/java/com/android/server/policy/PhoneWindowManager.java b/services/core/java/com/android/server/policy/PhoneWindowManager.java
-index 7107d2973067..5c3b30bf2bf7 100644
+index 231357e96306..eccfa9204096 100644
 --- a/services/core/java/com/android/server/policy/PhoneWindowManager.java
 +++ b/services/core/java/com/android/server/policy/PhoneWindowManager.java
-@@ -225,6 +225,7 @@ import com.android.internal.policy.LogDecelerateInterpolator;
- import com.android.internal.policy.PhoneWindow;
- import com.android.internal.policy.TransitionAnimation;
+@@ -229,6 +229,7 @@ import com.android.internal.policy.TransitionAnimation;
  import com.android.internal.statusbar.IStatusBarService;
-+import com.android.internal.util.ScreenshotHelper;
  import com.android.internal.widget.LockPatternUtils;
  import com.android.server.AccessibilityManagerInternal;
++import com.android.internal.util.ScreenshotHelper;
  import com.android.server.ExtconStateObserver;
+ import com.android.server.ExtconUEventObserver;
+ import com.android.server.GestureLauncherService;
 @@ -749,6 +750,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
      boolean mHavePendingMediaKeyRepeatWithWakeLock;
  
@@ -197,15 +204,15 @@ index 7107d2973067..5c3b30bf2bf7 100644
  
      private AssistUtils mAssistUtils;
  
-@@ -820,6 +822,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
- 
-     private boolean mLongSwipeDown;
+@@ -805,6 +807,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     private static final int MSG_LOG_KEYBOARD_SYSTEM_EVENT = 26;
+     private static final int MSG_SET_DEFERRED_KEY_ACTIONS_EXECUTABLE = 27;
  
 +    private SwipeToScreenshotListener mSwipeToScreenshot;
 +
-     private class PolicyHandler extends Handler {
- 
-         private PolicyHandler(Looper looper) {
+     // Lineage additions
+     private static final int MSG_TOGGLE_TORCH = 100;
+     private static final int MSG_CAMERA_LONG_PRESS = 101;
 @@ -1079,6 +1083,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
              resolver.registerContentObserver(LineageSettings.System.getUriFor(
                      LineageSettings.System.VOLUME_ANSWER_CALL), false, this,
@@ -216,20 +223,24 @@ index 7107d2973067..5c3b30bf2bf7 100644
  
              updateSettings();
          }
-@@ -2532,6 +2539,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -2534,6 +2541,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
          }
  
          mHandler = new PolicyHandler(injector.getLooper());
-+        mSwipeToScreenshot = new SwipeToScreenshotListener(mContext, () -> interceptScreenshotChord(
-+                SCREENSHOT_KEY_OTHER, 0 /*pressDelay*/));
++        mSwipeToScreenshot = new SwipeToScreenshotListener(mContext, new SwipeToScreenshotListener.Callbacks() {
++            @Override
++            public void onSwipeThreeFinger() {
++                interceptScreenshotChord(SCREENSHOT_KEY_OTHER, 0 /*pressDelay*/);
++            }
++        });
          mWakeGestureListener = new MyWakeGestureListener(mContext, mHandler);
          mSettingsObserver = new SettingsObserver(mHandler);
  
-@@ -3089,6 +3098,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -3136,6 +3149,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
          mSingleKeyGestureDetector.addRule(new BackKeyRule());
      }
  
-+    private void enableSwipeThreeFingerGesture(boolean enable){
++     private void enableSwipeThreeFingerGesture(boolean enable){
 +        if (enable) {
 +            if (haveEnableGesture) return;
 +            haveEnableGesture = true;
@@ -244,7 +255,7 @@ index 7107d2973067..5c3b30bf2bf7 100644
      private void updateKeyAssignments() {
          int activeHardwareKeys = mDeviceHardwareKeys;
  
-@@ -3281,6 +3302,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -3328,6 +3353,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                      LineageSettings.System.CAMERA_LAUNCH, 0,
                      UserHandle.USER_CURRENT) == 1;
  
@@ -258,7 +269,7 @@ index 7107d2973067..5c3b30bf2bf7 100644
                      Settings.Secure.WAKE_GESTURE_ENABLED, 0,
 diff --git a/services/core/java/com/android/server/policy/SwipeToScreenshotListener.java b/services/core/java/com/android/server/policy/SwipeToScreenshotListener.java
 new file mode 100644
-index 000000000000..8079638e47fe
+index 000000000000..88a465b6c382
 --- /dev/null
 +++ b/services/core/java/com/android/server/policy/SwipeToScreenshotListener.java
 @@ -0,0 +1,148 @@
@@ -296,13 +307,13 @@ index 000000000000..8079638e47fe
 +    private static final int THREE_GESTURE_STATE_DETECTED_TRUE = 3;
 +    private static final int THREE_GESTURE_STATE_NO_DETECT = 4;
 +    private boolean mBootCompleted;
-+    private final Context mContext;
++    private Context mContext;
 +    private boolean mDeviceProvisioned = false;
-+    private final float[] mInitMotionY;
-+    private final int[] mPointerIds;
++    private float[] mInitMotionY;
++    private int[] mPointerIds;
 +    private int mThreeGestureState = THREE_GESTURE_STATE_NONE;
-+    private final int mThreeGestureThreshold;
-+    private final int mThreshold;
++    private int mThreeGestureThreshold;
++    private int mThreshold;
 +    private final Callbacks mCallbacks;
 +    DisplayMetrics mDisplayMetrics;
 +
@@ -401,7 +412,7 @@ index 000000000000..8079638e47fe
 +            minY = Math.min(minY, y);
 +        }
 +        if (maxY - minY <= mDisplayMetrics.density * 150.0f) {
-+            return maxX - minX <= ((float) Math.min(width, height));
++            return maxX - minX <= ((float) (width < height ? width : height));
 +        }
 +        return false;
 +    }

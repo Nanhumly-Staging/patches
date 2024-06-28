@@ -1,0 +1,73 @@
+From d92bb4a7cb835defd91e4346a6157654d22a929b Mon Sep 17 00:00:00 2001
+From: Pranav Vashi <neobuddy89@gmail.com>
+Date: Sun, 7 Jan 2024 01:51:03 +0530
+Subject: [PATCH 08/10] SystemUI: biometrics: Follow user setting to confirm
+ face unlock
+
+* It seems that AOSP code migration has some pending clean up
+  which creates issue of not honoring setConfirmationRequired(false)
+  for biometric prompt.
+* Let's disregard app setting and follow only user setting whether or
+  not confirm face unlock prompt is required.
+
+Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
+---
+ .../biometrics/data/repository/PromptRepository.kt     | 10 +---------
+ .../biometrics/ui/viewmodel/PromptViewModel.kt         |  9 ++-------
+ 2 files changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/data/repository/PromptRepository.kt b/packages/SystemUI/src/com/android/systemui/biometrics/data/repository/PromptRepository.kt
+index b87fadf995e6..beb2dc197582 100644
+--- a/packages/SystemUI/src/com/android/systemui/biometrics/data/repository/PromptRepository.kt
++++ b/packages/SystemUI/src/com/android/systemui/biometrics/data/repository/PromptRepository.kt
+@@ -132,17 +132,9 @@ constructor(
+ 
+     private val _faceSettings =
+         _userId.map { id -> faceSettings.forUser(id) }.distinctUntilChanged()
+-    private val _faceSettingAlwaysRequireConfirmation =
+-        _faceSettings.flatMapLatest { it.alwaysRequireConfirmationInApps }.distinctUntilChanged()
+ 
+-    private val _isConfirmationRequired = _promptInfo.map { it?.isConfirmationRequested ?: false }
+     override val isConfirmationRequired =
+-        combine(_isConfirmationRequired, _faceSettingAlwaysRequireConfirmation) {
+-                appRequiresConfirmation,
+-                forceRequireConfirmation ->
+-                forceRequireConfirmation || appRequiresConfirmation
+-            }
+-            .distinctUntilChanged()
++        _faceSettings.flatMapLatest { it.alwaysRequireConfirmationInApps }.distinctUntilChanged()
+ 
+     private val _showBpWithoutIconForCredential: MutableStateFlow<Boolean> = MutableStateFlow(false)
+     override val showBpWithoutIconForCredential = _showBpWithoutIconForCredential.asStateFlow()
+diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/ui/viewmodel/PromptViewModel.kt b/packages/SystemUI/src/com/android/systemui/biometrics/ui/viewmodel/PromptViewModel.kt
+index 61aeffe03b5d..14a2636449f2 100644
+--- a/packages/SystemUI/src/com/android/systemui/biometrics/ui/viewmodel/PromptViewModel.kt
++++ b/packages/SystemUI/src/com/android/systemui/biometrics/ui/viewmodel/PromptViewModel.kt
+@@ -198,10 +198,7 @@ constructor(
+      * If the API caller or the user's personal preferences require explicit confirmation after
+      * successful authentication. Confirmation always required when in explicit flow.
+      */
+-    val isConfirmationRequired: Flow<Boolean> =
+-        combine(_isOverlayTouched, size) { isOverlayTouched, size ->
+-            !isOverlayTouched && size.isNotSmall
+-        }
++    val isConfirmationRequired: Flow<Boolean> = promptSelectorInteractor.isConfirmationRequired
+ 
+     /**
+      * When fingerprint and face modalities are enrolled, indicates whether only face auth has
+@@ -594,11 +591,9 @@ constructor(
+     }
+ 
+     private suspend fun needsExplicitConfirmation(modality: BiometricModality): Boolean {
+-        val confirmationRequired = isConfirmationRequired.first()
+-
+         // Only worry about confirmationRequired if face was used to unlock
+         if (modality == BiometricModality.Face) {
+-            return confirmationRequired
++            return isConfirmationRequired.first()
+         }
+         // fingerprint only never requires confirmation
+         return false
+-- 
+2.25.1
+

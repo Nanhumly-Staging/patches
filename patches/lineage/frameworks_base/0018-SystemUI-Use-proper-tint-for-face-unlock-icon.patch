@@ -1,15 +1,16 @@
-From a1c45bfaed204aa9fc58cb58a63d81e01e950743 Mon Sep 17 00:00:00 2001
+From 3dc58145efbb7b5717e78f10c1e3a1c39a62d5de Mon Sep 17 00:00:00 2001
 From: Pranav Vashi <neobuddy89@gmail.com>
 Date: Mon, 4 Dec 2023 01:45:18 +0530
-Subject: [PATCH 3/3] SystemUI: Use proper tint for face unlock icon
+Subject: [PATCH 07/10] SystemUI: Use proper tint for face unlock icon
 
+Change-Id: I3857935ae09ff4412a4a6dd27af271fecc580918
 Signed-off-by: Pranav Vashi <neobuddy89@gmail.com>
 ---
  packages/SystemUI/res/layout/keyguard_bottom_area.xml | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/packages/SystemUI/res/layout/keyguard_bottom_area.xml b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
-index a1e2a65bef21..6e6a2881ffbe 100644
+index c256aaac4fe9..18521f93c7df 100644
 --- a/packages/SystemUI/res/layout/keyguard_bottom_area.xml
 +++ b/packages/SystemUI/res/layout/keyguard_bottom_area.xml
 @@ -38,7 +38,7 @@
